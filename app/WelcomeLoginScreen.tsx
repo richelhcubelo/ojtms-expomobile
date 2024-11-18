@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     marginTop: -60,
     textAlign: "center",
-    color: "#007487",
+    color: "#0b6477",
   },
   subtitle: {
     fontSize: 14,
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   },
   button: {
     width: "75%",
-    backgroundColor: "#1e8678",
+    backgroundColor: "#0b6477",
     paddingVertical: 15,
     paddingHorizontal: 30,
     borderRadius: 25,
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   },
   welcomebutton: {
     width: "90%",
-    backgroundColor: "#1e8678",
+    backgroundColor: "#0b6477",
     paddingVertical: 15,
     paddingHorizontal: 30,
     borderRadius: 25,

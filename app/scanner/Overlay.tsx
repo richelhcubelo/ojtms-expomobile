@@ -28,3 +28,5 @@ export const Overlay = () => {
     </Canvas>
   );
 };
+
+export default Overlay;

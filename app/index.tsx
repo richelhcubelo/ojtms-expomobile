@@ -3,15 +3,18 @@ import { StyleSheet } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import WelcomeLoginScreen from "./WelcomeLoginScreen";
+
 import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
+
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import "react-native-reanimated";
+
 import TabLayout from "./(tabs)/_layout";
 import ChangePassword from "@/components/STUDENT/MODAL/ChangePassword";
 
@@ -24,6 +27,7 @@ export default function App() {
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
+
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
@@ -36,18 +40,21 @@ export default function App() {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack.Navigator>
-        <Stack.Screen
-          name="OJTMS" // You can keep a name here for navigation purposes
-          component={WelcomeLoginScreen}
-          options={{ headerShown: false }} // This will hide the header
-        />
-        <Stack.Screen
-          name="(tabs)"
-          component={TabLayout}
-          options={{ headerShown: false }}
-        />
-      </Stack.Navigator>
+      <NavigationContainer>
+        {/* Navigation stack */}
+        <Stack.Navigator>
+          <Stack.Screen
+            name="OJTMS"
+            component={WelcomeLoginScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="(tabs)"
+            component={TabLayout}
+            options={{ headerShown: false }}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
     </ThemeProvider>
   );
 }
