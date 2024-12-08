@@ -9,8 +9,9 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"; // Import Icon component
-
+import Config from "@/config";
 export default function WelcomeLoginScreen() {
   const navigation = useNavigation();
   const [username, setUsername] = useState("");
@@ -22,9 +23,32 @@ export default function WelcomeLoginScreen() {
     setIsLogin(true);
   };
   const router = useRouter();
-  const handleLogin = () => {
-    console.log("Login attempt with:", username, password);
-    router.push("/home");
+  const handleLogin = async () => {
+    try {
+      //await AsyncStorage.clear();
+      const response = await fetch(`${Config.API_BASE_URL}/api/student/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          student_schoolid: username,
+          student_password: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log("Login successful:", data);
+        await AsyncStorage.setItem("student_id", String(data.student_id)); // Save as string
+        await AsyncStorage.setItem("student_name", data.student_name);
+        router.push("/home"); // Navigate to home after success
+      } else {
+        alert(data.message || "Login failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error logging in:", error);
+      alert("An error occurred. Please try again.");
+    }
   };
 
   const handleBack = () => {

@@ -1,30 +1,36 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Config from "@/config";
 const DTRTable = () => {
-  const data = [
-    {
-      date: "11-05-2024",
-      day: "1",
-      morning: { in: "7:30 AM", out: "12:16 PM" },
-      afternoon: { in: "-", out: "-" },
-      hours: "4 hrs",
-    },
-    {
-      date: "11-06-2024",
-      day: "2",
-      morning: { in: "7:30 AM", out: "12:11 PM" },
-      afternoon: { in: "12:30 AM", out: "5:12 PM" },
-      hours: "8 hrs",
-    },
-    {
-      date: "11-07-2024",
-      day: "3",
-      morning: { in: "7:36 AM", out: "12:19 PM" },
-      afternoon: { in: "12:30 AM", out: "5:12 PM" },
-      hours: "8 hrs",
-    },
-  ];
+  const [timesheet, setTimesheet] = useState([]);
+  // Fetch timesheet on component mount
+  useEffect(() => {
+    const fetchStudentTimesheet = async () => {
+      try {
+        const studentId = await AsyncStorage.getItem("student_id");
+        if (!studentId) {
+          console.error("Student ID not found in AsyncStorage");
+          return;
+        }
+
+        const response = await fetch(
+          `${Config.API_BASE_URL}/api/student-timesheet?student_id=${studentId}`
+        );
+        const data = await response.json();
+
+        if (response.ok) {
+          setTimesheet(data.timesheet);
+        } else {
+          console.error("Error fetching timesheet:", data.error);
+        }
+      } catch (error) {
+        console.error("Error fetching timesheet:", error);
+      }
+    };
+
+    fetchStudentTimesheet();
+  }, []);
 
   return (
     <View style={styles.tableContainer}>
@@ -35,10 +41,10 @@ const DTRTable = () => {
         <Text style={styles.headerText}>Afternoon</Text>
         <Text style={styles.headerText}>Hours</Text>
       </View>
-      {data.map((row, index) => (
+      {timesheet.map((row, index) => (
         <View key={index} style={styles.tableRow}>
           <Text style={styles.cellText}>{row.date}</Text>
-          <Text style={styles.cellText}>{row.day}</Text>
+          <Text style={styles.cellText}>{index + 1}</Text>
           <View style={styles.timeCell}>
             <Text style={styles.timeText}>
               In: <Text style={styles.inTime}>{row.morning.in}</Text>
@@ -55,7 +61,7 @@ const DTRTable = () => {
               Out: <Text style={styles.outTime}>{row.afternoon.out}</Text>
             </Text>
           </View>
-          <Text style={styles.cellText}>{row.hours}</Text>
+          <Text style={styles.cellText}>{row.totalHours} hrs</Text>
         </View>
       ))}
     </View>

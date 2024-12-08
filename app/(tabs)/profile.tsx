@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,48 +8,81 @@ import {
   ScrollView,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import ChangePassword from "@/components/STUDENT/MODAL/ChangePassword";
 import PersonalInfo from "@/components/STUDENT/PersonalInfo";
 import CompanyInfo from "@/components/STUDENT/CompanyInfo";
 import LogoutConfirmationModal from "@/components/STUDENT/MODAL/LogoutConfirmationModal";
-
+import Config from "@/config";
 export default function ProfileScreen() {
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const [showLogoutModal, setShowLogoutModal] = useState(false); // State to control logout modal visibility
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [studentDetails, setStudentDetails] = useState("");
 
-  const handleToggleChangePassword = () => {
-    setShowChangePassword(!showChangePassword);
-  };
+  // Fetching student details should be at the top level as well
+  useEffect(() => {
+    fetchStudentDetails();
+  }, []);
 
   const handleLogout = () => {
     setShowLogoutModal(true);
   };
-
-  const confirmLogout = () => {
-    setShowLogoutModal(false);
-    // Perform logout logic here, e.g., clear user data, navigate to login screen
-  };
-
   const cancelLogout = () => {
     setShowLogoutModal(false);
   };
 
+  const handleToggleChangePassword = () => {
+    setShowChangePassword((prev) => !prev);
+  };
+
+  const getProfileImage = () => {
+    if (studentDetails.student_sex === "Male") {
+      return require("@/assets/images/male.png");
+    } else if (studentDetails.student_sex === "Female") {
+      return require("@/assets/images/female.png");
+    }
+    return require("@/assets/images/profilesample.png");
+  };
+
+  // Ensure this function is defined but not conditionally called
+  const fetchStudentDetails = async () => {
+    try {
+      const studentId = await AsyncStorage.getItem("student_id");
+      if (!studentId) {
+        console.error("Student ID not found in AsyncStorage");
+        return;
+      }
+
+      const response = await fetch(
+        `${Config.API_BASE_URL}/api/student-details?student_id=${studentId}`
+      );
+      const data = await response.json();
+
+      if (response.ok) {
+        setStudentDetails(data.studentDetails);
+      } else {
+        console.error("Error fetching student details:", data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching student details:", error);
+    }
+  };
+
+  // Conditional rendering should not affect hook calls
   if (showChangePassword) {
     return <ChangePassword onCancel={handleToggleChangePassword} />;
   }
-
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.year}>2022-2023</Text>
+          <Text style={styles.year}>{studentDetails.school_yr || "N/A"}</Text>
         </View>
-        <Image
-          source={require("@/assets/images/profilesample.png")}
-          style={styles.profileImage}
-        />
-        <Text style={styles.name}>Richel H. Cubelo</Text>
-        <Text style={styles.id}>186744</Text>
+        <Image source={getProfileImage()} style={styles.profileImage} />
+        <Text style={styles.name}>{studentDetails.student_name || "N/A"}</Text>
+        <Text style={styles.id}>
+          {studentDetails.student_schoolid || "N/A"}
+        </Text>
 
         <View style={styles.divider} />
         <PersonalInfo />

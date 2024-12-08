@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,9 @@ import {
   StyleSheet,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
-
+import { Alert } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Config from "@/config";
 interface ChangePasswordProps {
   onCancel: () => void;
 }
@@ -22,9 +24,88 @@ export default function ChangePassword({ onCancel }: ChangePasswordProps) {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleUpdatePassword = () => {
-    // Add your update password logic here
-    console.log("Updating password...");
+  useEffect(() => {
+    const fetchCurrentPassword = async () => {
+      try {
+        const studentId = await AsyncStorage.getItem("student_id");
+        if (!studentId) {
+          Alert.alert("Error", "Student ID not found. Please log in again.");
+          return;
+        }
+
+        const response = await fetch(
+          `${Config.API_BASE_URL}/api/student-password?student_id=${studentId}`
+        );
+        const data = await response.json();
+
+        if (response.ok) {
+          setCurrentPassword(data.password); // Set the fetched password
+        } else {
+          Alert.alert(
+            "Error",
+            data.error || "Failed to fetch current password."
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching current password:", error);
+        Alert.alert(
+          "Error",
+          "An error occurred while fetching current password."
+        );
+      }
+    };
+
+    fetchCurrentPassword();
+  }, []);
+
+  const handleUpdatePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      Alert.alert("Error", "All fields are required.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      Alert.alert("Error", "New Password and Confirm Password do not match.");
+      return;
+    }
+
+    try {
+      const studentId = await AsyncStorage.getItem("student_id");
+      if (!studentId) {
+        Alert.alert("Error", "Student ID not found. Please log in again.");
+        return;
+      }
+
+      const response = await fetch(
+        `${Config.API_BASE_URL}/api/update-student-password`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            student_id: studentId,
+            current_password: currentPassword,
+            new_password: newPassword,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        Alert.alert("Success", "Password updated successfully.");
+        setCurrentPassword(newPassword); // Update currentPassword with the new password
+        setNewPassword("");
+        setConfirmPassword("");
+        onCancel();
+      } else {
+        Alert.alert("Error", data.error || "Failed to update password.");
+      }
+    } catch (error) {
+      console.error("Error updating password:", error);
+      Alert.alert("Error", "An error occurred. Please try again.");
+    }
   };
 
   return (

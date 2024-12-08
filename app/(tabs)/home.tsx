@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -10,8 +10,144 @@ import {
 import Icon from "react-native-vector-icons/FontAwesome"; // Import FontAwesome icons
 import TimeSchedule from "@/components/STUDENT/TimeSchedule";
 import CalendarComponent from "@/components/STUDENT/CalendarComponent";
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import AnnouncementModal from "@/components/STUDENT/MODAL/AnnouncementModal";
+import { Alert } from "react-native";
+import Config from "@/config";
 export default function HomeScreen() {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [announcement, setAnnouncement] = useState({
+    type: "",
+    content: "",
+  });
+  const [studentDetails, setStudentDetails] = useState({
+    firstName: "N/A",
+    renderedTime: 0,
+    remainingTime: 0,
+    requiredTime: 0,
+    studentSex: "N/A",
+  });
+
+  const fetchStudentDetails = async () => {
+    try {
+      const studentId = await AsyncStorage.getItem("student_id");
+      if (!studentId) {
+        console.error("Student ID not found in AsyncStorage");
+        return;
+      }
+
+      const response = await fetch(
+        `${Config.API_BASE_URL}/api/student-homedetails?student_id=${studentId}`
+      );
+      const data = await response.json();
+
+      if (response.ok) {
+        setStudentDetails({
+          firstName: data.studentDetails.firstName || "N/A",
+          renderedTime: data.studentDetails.renderedTime || 0,
+          remainingTime: data.studentDetails.remainingTime || 0,
+          requiredTime: data.studentDetails.requiredTime || 0, // Map correctly
+          studentSex: data.studentDetails.studentSex || "N/A",
+        });
+      } else {
+        console.error("Error fetching student details:", data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching student details:", error);
+    }
+  };
+
+  const calculateRenderedTime = async () => {
+    try {
+      const studentId = await AsyncStorage.getItem("student_id");
+      if (!studentId) {
+        Alert.alert("Error", "Student ID not found in AsyncStorage.");
+        return;
+      }
+
+      // Fetch timesheet entries
+      const response = await fetch(
+        `${Config.API_BASE_URL}/api/student-timesheet?student_id=${studentId}`
+      );
+      const data = await response.json();
+
+      if (response.ok) {
+        // Parse `totalHours` as a float before summing
+        interface TimesheetEntry {
+          totalHours: string;
+        }
+        const totalRendered = data.timesheet.reduce(
+          (sum: number, entry: TimesheetEntry) => {
+            const hours = parseFloat(entry.totalHours); // Ensure it's a number
+            return sum + (isNaN(hours) ? 0 : hours); // Safeguard against NaN
+          },
+          0
+        );
+
+        setStudentDetails((prev) => ({
+          ...prev,
+          renderedTime: parseFloat(totalRendered.toFixed(2)), // Ensure it's a number
+          remainingTime: parseFloat(
+            Math.max(prev.requiredTime - totalRendered, 0).toFixed(2) // Ensure non-negative and numeric
+          ),
+        }));
+      } else {
+        console.error("Error fetching timesheet:", data.error);
+      }
+    } catch (error) {
+      console.error("Error fetching timesheet:", error);
+    }
+  };
+  const showModal = (message: string) => {
+    modalMessage;
+    setModalMessage(message);
+    setModalVisible(true);
+  };
+  const fetchLatestAnnouncement = async () => {
+    try {
+      const studentId = await AsyncStorage.getItem("student_id");
+      if (!studentId) {
+        console.error("Student ID not found in AsyncStorage");
+        return;
+      }
+
+      const response = await fetch(
+        `${Config.API_BASE_URL}/api/latest-announcement?student_id=${studentId}`
+      );
+      const data = await response.json();
+
+      if (response.ok) {
+        setAnnouncement({
+          type: data.announcement.announcement_type,
+          content: data.announcement.announcement_content,
+        });
+      } else {
+        console.error("Error fetching announcement:", data.error);
+      }
+    } catch (error) {
+      console.error("Error fetching announcement:", error);
+    }
+  };
+
+  const showAnnouncementModal = () => {
+    setModalVisible(true);
+  };
+
+  const getProfileImage = () => {
+    if (studentDetails.studentSex === "Male") {
+      return require("@/assets/images/male.png");
+    } else if (studentDetails.studentSex === "Female") {
+      return require("@/assets/images/female.png");
+    }
+    return require("@/assets/images/profilesample.png");
+  };
+
+  useEffect(() => {
+    fetchLatestAnnouncement();
+    fetchStudentDetails();
+    calculateRenderedTime();
+  }, []);
   return (
     <ScrollView style={styles.container}>
       {/* OJTMS Header with Notification Button */}
@@ -25,39 +161,53 @@ export default function HomeScreen() {
         </View>
 
         {/* Notification Button */}
-        <TouchableOpacity style={styles.notificationButton}>
+        <TouchableOpacity
+          style={styles.notificationButton}
+          onPress={() => showModal("Hello! This is a modal message.")}
+        >
           <Icon name="bell" size={24} color="#545454" />
         </TouchableOpacity>
       </View>
 
       {/* Header */}
       <View style={styles.header}>
-        <Image
-          source={require("@/assets/images/profilesample.png")}
-          style={styles.logo}
-        />
-        <Text style={styles.greetingText}>Hello there, Richel! 👋</Text>
+        <Image source={getProfileImage()} style={styles.logo} />
+        <Text style={styles.greetingText}>
+          Hello there, {studentDetails.firstName}! 👋
+        </Text>
       </View>
 
       {/* Rendered Time Information */}
       <View style={styles.timeContainer}>
         <View style={styles.timeBox}>
           <Text style={styles.timeLabel}>Rendered Time</Text>
-          <Text style={styles.timeNumber}>20 hrs</Text>
+          <Text style={styles.timeNumber}>
+            {studentDetails.renderedTime} hrs
+          </Text>
         </View>
         <View style={styles.remainingTimeBox}>
           <Text style={styles.remainingTimeLabel}>Remaining Time</Text>
-          <Text style={styles.timeNumberSmall}>300 hrs</Text>
+          <Text style={styles.timeNumberSmall}>
+            {studentDetails.remainingTime} hrs
+          </Text>
         </View>
         <View style={styles.requiredDurationBox}>
           <Text style={styles.requiredDurationLabel}>Required Duration</Text>
-          <Text style={styles.timeNumberSmall}>320 hrs</Text>
+          <Text style={styles.timeNumberSmall}>
+            {" "}
+            {studentDetails.requiredTime}
+          </Text>
         </View>
       </View>
 
       <CalendarComponent />
       {/* Time Schedule Component */}
       <TimeSchedule />
+      <AnnouncementModal
+        isVisible={modalVisible}
+        message={`**${announcement.type}**: ${announcement.content}`}
+        onClose={() => setModalVisible(false)}
+      />
     </ScrollView>
   );
 }

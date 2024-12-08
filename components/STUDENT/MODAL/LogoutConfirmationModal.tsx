@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
 interface LogoutConfirmationModalProps {
   onCancel: () => void;
 }
@@ -11,7 +11,8 @@ export default function LogoutConfirmationModal({
 }: LogoutConfirmationModalProps) {
   const router = useRouter();
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
+    await AsyncStorage.clear();
     router.push("/WelcomeLoginScreen"); // Navigate to WelcomeLoginScreen
   };
 

@@ -1,10 +1,15 @@
 import { View, Text, StyleSheet, SafeAreaView, Pressable } from "react-native";
 import { Link, Stack } from "expo-router";
 import { useCameraPermissions } from "expo-camera";
+import {
+  useForegroundPermissions,
+  getCurrentPositionAsync,
+} from "expo-location";
 
 export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
-
+  const [locationPermission, requestLocationPermission] =
+    useForegroundPermissions();
   const isPermissionGranted = Boolean(permission?.granted);
 
   const handleRequestPermission = async () => {
@@ -17,13 +22,27 @@ export default function ScanScreen() {
       console.log("Camera permission denied");
     }
   };
+  const handleRequestLocation = async () => {
+    const { status } = await requestLocationPermission();
+    if (status === "granted") {
+      const location = await getCurrentPositionAsync({});
+      console.log("User Location:", location);
+    } else {
+      console.log("Location permission denied");
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ title: "Overview", headerShown: false }} />
       <Text style={styles.title}>QR Code Scanner</Text>
       <View style={{ gap: 20 }}>
-        <Pressable onPress={handleRequestPermission}>
+        <Pressable
+          onPress={async () => {
+            await handleRequestPermission();
+            await handleRequestLocation();
+          }}
+        >
           <Text style={styles.buttonStyle}>Request Permissions</Text>
         </Pressable>
         <Link href="/scanner/scan1" asChild>
