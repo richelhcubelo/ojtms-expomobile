@@ -10,45 +10,19 @@ import {
 import { useRouter } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons"; // Import Icon component
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import Config from "@/config";
+
 export default function WelcomeLoginScreen() {
   const navigation = useNavigation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLogin, setIsLogin] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // State to toggle password visibility
+  const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
 
   const handleGetStarted = () => {
     setIsLogin(true);
-  };
-  const router = useRouter();
-  const handleLogin = async () => {
-    try {
-      //await AsyncStorage.clear();
-      const response = await fetch(`${Config.API_BASE_URL}/api/student/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          student_schoolid: username,
-          student_password: password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        console.log("Login successful:", data);
-        await AsyncStorage.setItem("student_id", String(data.student_id)); // Save as string
-        await AsyncStorage.setItem("student_name", data.student_name);
-        router.push("/home"); // Navigate to home after success
-      } else {
-        alert(data.message || "Login failed. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error logging in:", error);
-      alert("An error occurred. Please try again.");
-    }
   };
 
   const handleBack = () => {
@@ -61,69 +35,87 @@ export default function WelcomeLoginScreen() {
     <View style={styles.container}>
       {isLogin ? (
         <>
+          <TouchableOpacity style={styles.Screen} onPress={handleGetStarted}>
+            <View style={styles.welcomeContainer}>
+              <Image
+                source={require("@/assets/images/upperlogin.png")}
+                style={styles.backgroundImage}
+              />
+              <Image
+                source={require("@/assets/images/ojt-logowhite.png")}
+                style={styles.ojtLogo}
+              />
+            </View>
+          </TouchableOpacity>
+
+          {/* Back button moved here */}
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
-          <Image
-            source={require("@/assets/images/logo-sidebar.png")}
-            style={styles.logo}
-          />
-          <Text style={styles.title}>Student Login</Text>
-          <Text style={styles.label}>Username</Text>
-          <View style={styles.inputContainer}>
-            <Icon
-              name="account"
-              size={20}
-              color="#888"
-              style={styles.loginicon}
-            />
-            <TextInput
-              style={styles.input}
-              value={username}
-              onChangeText={setUsername}
-            />
-          </View>
-          <Text style={styles.label}>Password</Text>
-          <View style={styles.passwordContainer}>
-            <Icon name="lock" size={20} color="#888" style={styles.loginicon} />
-            <TextInput
-              style={styles.passwordInput}
-              secureTextEntry={!showPassword} // Toggle visibility
-              value={password}
-              onChangeText={setPassword}
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+          <View style={styles.loginContainer}>
+            <Text style={styles.title}>Student Login</Text>
+            <Text style={styles.label}>Username</Text>
+            <View style={styles.inputContainer}>
               <Icon
-                name={showPassword ? "eye" : "eye-off"}
-                size={24}
+                name="account"
+                size={20}
                 color="#888"
+                style={styles.loginicon}
               />
+              <TextInput
+                style={styles.input}
+                value={username}
+                onChangeText={setUsername}
+              />
+            </View>
+            <Text style={styles.label}>Password</Text>
+            <View style={styles.passwordContainer}>
+              <Icon
+                name="lock"
+                size={20}
+                color="#888"
+                style={styles.loginicon}
+              />
+              <TextInput
+                style={styles.passwordInput}
+                secureTextEntry={!showPassword} // Toggle visibility
+                value={password}
+                onChangeText={setPassword}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Icon
+                  name={showPassword ? "eye" : "eye-off"}
+                  size={24}
+                  color="#888"
+                />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => router.push("/home")}
+            >
+              <Text style={styles.buttonText}>Login</Text>
             </TouchableOpacity>
+            <Text style={styles.footer}>Integrated On-the-Job Training</Text>
+            <Text style={styles.footer1}>Monitoring System</Text>
           </View>
-          <TouchableOpacity style={styles.button} onPress={handleLogin}>
-            <Text style={styles.buttonText}>Login</Text>
-          </TouchableOpacity>
-          <Text style={styles.footer}>Integrated On-the-Job Training</Text>
-          <Text style={styles.footer1}>Monitoring System</Text>
         </>
       ) : (
-        <>
-          <Text style={styles.title}>Welcome, Trainee!</Text>
-          <Text style={styles.subtitle}>
-            Enjoy our free features that make attendance tracking effortless
-            with QR code scanning for quick time in and time out.
-          </Text>
-          <Image
-            source={require("@/assets/gifs/SCAN-QR.gif")}
-            style={styles.gif}
-          />
-          <TouchableOpacity
-            style={styles.welcomebutton}
-            onPress={handleGetStarted}
-          >
-            <Text style={styles.buttonText}>Get Started</Text>
-          </TouchableOpacity>
-        </>
+        <TouchableOpacity
+          style={styles.fullScreenButton}
+          onPress={handleGetStarted}
+        >
+          <View style={styles.welcomeContainer}>
+            <Image
+              source={require("@/assets/images/front-icon.png")}
+              style={styles.logoWelcome}
+            />
+            <Image
+              source={require("@/assets/images/welcomeimage.png")}
+              style={styles.fullScreenImage}
+            />
+          </View>
+        </TouchableOpacity>
       )}
     </View>
   );
@@ -134,40 +126,43 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 25,
     backgroundColor: "#f9f8f7",
   },
-  logo: {
-    marginBottom: 80,
-    justifyContent: "center",
+  backgroundImage: {
+    position: "absolute",
+    top: -10,
+    width: "100%",
+    height: 250, // Adjust height as needed
+    resizeMode: "cover",
+    borderRadius: 20,
+  },
+  loginContainer: {
     width: "90%",
-    height: 100,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 20,
+    bottom: "20%",
+    minHeight: 400,
+    marginTop: 120, // Adjust margin to position the container below the image
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 6,
   },
   title: {
     fontSize: 22,
     fontWeight: "bold",
     marginBottom: 15,
-    marginTop: -60,
     textAlign: "center",
     color: "#0b6477",
   },
-  subtitle: {
-    fontSize: 14,
-    textAlign: "center",
-    color: "#7d7d7d",
-  },
   label: {
-    alignSelf: "flex-start", // Align to the start (left) of the container
-    marginBottom: 5,
+    alignSelf: "flex-start",
+    marginBottom: 12,
     fontSize: 16,
-    color: "#333", // Change the color to your preference
+    color: "#333",
     left: 5,
-  },
-  gif: {
-    width: 400,
-    height: 400,
-    marginBottom: -50,
-    marginTop: -70,
   },
   inputContainer: {
     flexDirection: "row",
@@ -203,23 +198,11 @@ const styles = StyleSheet.create({
     padding: 15,
   },
   button: {
-    width: "75%",
+    width: "100%",
     backgroundColor: "#0b6477",
+    top: "1%",
     paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 25,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    marginTop: 20,
-  },
-  welcomebutton: {
-    width: "90%",
-    backgroundColor: "#0b6477",
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 25,
+    borderRadius: 15,
     shadowColor: "#000",
     shadowOpacity: 0.2,
     shadowOffset: { width: 0, height: 2 },
@@ -234,22 +217,58 @@ const styles = StyleSheet.create({
   footer: {
     fontSize: 12,
     color: "#9e9e9e",
-    marginTop: 110,
+    top: "5%",
     textAlign: "center",
   },
   footer1: {
     fontSize: 12,
     color: "#9e9e9e",
     textAlign: "center",
+    top: "5%",
   },
   backButton: {
     position: "absolute",
-    top: 2,
-    left: 2,
+    top: 15, // Adjust this value to position the button correctly
+    left: 20, // Adjust this value to position the button correctly
     padding: 10,
+    zIndex: 1, // Ensure the button is above other elements
   },
   backButtonText: {
-    fontSize: 40,
+    fontSize: 24,
     color: "#000",
+  },
+  fullScreenButton: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+  },
+  Screen: {
+    flex: 1,
+  },
+  welcomeContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+    height: "100%",
+    position: "relative",
+  },
+  logoWelcome: {
+    width: 125, // Adjust size as needed
+    height: 230,
+    position: "absolute",
+    top: "36%", // Adjust position as needed
+    zIndex: 1,
+  },
+  fullScreenImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  ojtLogo: {
+    width: 420, // Adjust size as needed
+    height: 100,
+    position: "absolute",
+    top: "30%", // Adjust positioning to ensure it appears above welcomeimage
+    zIndex: 2,
   },
 });

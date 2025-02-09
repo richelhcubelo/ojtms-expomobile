@@ -76,7 +76,7 @@ const AddReportModal: React.FC<AddReportModalProps> = ({
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Add Report</Text>
           <View style={styles.addFilesContainer}>
-            <MaterialIcons name="cloud-upload" size={40} color="#0A77E4" />
+            <MaterialIcons name="cloud-upload" size={40} color="#0b9ca7" />
             <TouchableOpacity onPress={handleFileSelection}>
               <Text style={styles.chooseFilesLink}>Choose Image</Text>
             </TouchableOpacity>
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   addFilesContainer: {
-    height: 120,
+    height: 100,
     borderColor: "#ccc",
     borderWidth: 1,
     borderRadius: 5,
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f9f9f9",
   },
   chooseFilesLink: {
-    color: "#0A77E4",
+    color: "#0b9ca7",
     textDecorationLine: "underline",
     fontWeight: "bold",
     textAlign: "center",
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
   input: {
-    height: 80,
+    height: 120,
     borderColor: "#ccc",
     borderWidth: 1,
     borderRadius: 5,
@@ -167,14 +167,15 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   cancelButton: {
-    backgroundColor: "red",
+    backgroundColor: "#A9A9A9",
     padding: 10,
     borderRadius: 5,
     flex: 1,
+
     marginRight: 5,
   },
   submitButton: {
-    backgroundColor: "#0A77E4",
+    backgroundColor: "#0b9ca7",
     padding: 10,
     borderRadius: 5,
     flex: 1,

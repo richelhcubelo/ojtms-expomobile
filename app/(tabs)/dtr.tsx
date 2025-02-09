@@ -1,27 +1,47 @@
 import React, { useState } from "react";
-import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  ScrollView,
+} from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons"; // Import the icon library
-
+import Header from "@/components/Header"; // Import the Header component
 import DTRTable from "@/components/STUDENT/DTRTable";
+import FloatingDownloadButton from "@/components/FloatingAddButton"; // Import the FloatingAddButton
+import { useNavigation } from "@react-navigation/native"; // Import useNavigation
 
 export default function DTRScreen() {
   const [modalVisible, setModalVisible] = useState(false);
+  const navigation = useNavigation(); // Get the navigation object
+
+  // Function to handle back button press
+  const handleGoBack = () => {
+    navigation.goBack(); // Navigate back to the previous screen (home screen)
+  };
 
   return (
     <View style={styles.container}>
-      <View style={styles.container1}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => setModalVisible(true)}
-        >
-          <Icon name="download" size={20} color="#fff" style={styles.icon} />
-          <Text style={styles.buttonText}>Download DTR</Text>
-        </TouchableOpacity>
-      </View>
+      <Header title="DTR" showBackButton={true} onBackPress={handleGoBack} />
+      <ScrollView style={styles.container}>
+        <Header title="DTR" showBackButton={true} onBackPress={handleGoBack} />
 
-      <View style={styles.container2}>
-        <DTRTable />
-      </View>
+        <View style={styles.container1}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => setModalVisible(true)}
+          >
+            <Icon name="download" size={20} color="#fff" style={styles.icon} />
+            <Text style={styles.buttonText}>Download DTR</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.container2}>
+          <DTRTable />
+        </View>
+      </ScrollView>
+      <FloatingDownloadButton onPress={() => setModalVisible(true)} />
     </View>
   );
 }
@@ -29,17 +49,17 @@ export default function DTRScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 10,
-    marginTop: 50,
+    backgroundColor: "#f5f5f5",
   },
   container1: {
-    // Center the button horizontally and vertically
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20, // Add some space below the button
+    marginBottom: 20,
+    marginTop: 20, // Add some space below the header
   },
   container2: {
-    flex: 1, // Fill the remaining screen space
+    flex: 1,
+    paddingHorizontal: 10, // Add horizontal padding for better spacing
   },
   button: {
     backgroundColor: "#0A77E4",
@@ -47,8 +67,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 5,
     width: "90%",
-    flexDirection: "row", // Align the icon and text horizontally
-    alignItems: "center", // Center the icon and text vertically
+    flexDirection: "row",
+    alignItems: "center",
     justifyContent: "center",
   },
   buttonText: {
@@ -56,9 +76,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     textAlign: "center",
-    marginLeft: 5, // Add some space between the icon and text
+    marginLeft: 5,
   },
   icon: {
-    marginRight: 2, // Add some space between the icon and text
+    marginRight: 2,
   },
 });

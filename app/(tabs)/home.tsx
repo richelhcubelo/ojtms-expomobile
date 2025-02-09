@@ -6,14 +6,16 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  TextInput,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome"; // Import FontAwesome icons
-import TimeSchedule from "@/components/STUDENT/TimeSchedule";
 import CalendarComponent from "@/components/STUDENT/CalendarComponent";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import AnnouncementModal from "@/components/STUDENT/MODAL/AnnouncementModal";
 import { Alert } from "react-native";
 import Config from "@/config";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import NotificationIcon from "@/components/NotificationIcon";
 export default function HomeScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
@@ -149,168 +151,179 @@ export default function HomeScreen() {
     calculateRenderedTime();
   }, []);
   return (
-    <ScrollView style={styles.container}>
-      {/* OJTMS Header with Notification Button */}
-      <View style={styles.headerContainer}>
-        <View style={styles.ojtmsContainer}>
-          <Text style={styles.ojtmsText}>
-            <Text style={styles.ojText}>OJ</Text>
-            <Text style={styles.tText}>T</Text>
-            <Text style={styles.msText}>MS</Text>
+    <ScrollView style={styles.containerr}>
+      <View style={styles.headerBackground}>
+        <View style={styles.headerr}>
+          <Image source={getProfileImage()} style={styles.loggo} />
+          <Text style={styles.greetingTextt}>
+            Hello there,{"\n"}
+            <Text style={styles.firstNameText}>
+              {studentDetails.firstName}! 👋
+            </Text>
           </Text>
+          <View style={styles.notificationIconContainer}>
+            <NotificationIcon />
+          </View>
         </View>
+        <View style={styles.searchContainer}>
+          <TextInput style={styles.searchInput} placeholder="Search..." />
+        </View>
+      </View>
 
-        {/* Notification Button */}
-        <TouchableOpacity
-          style={styles.notificationButton}
-          onPress={() => showModal("Hello! This is a modal message.")}
+      <View style={styles.overviewContainer}>
+        <Text style={styles.overviewText}>Overview</Text>
+
+        <ScrollView
+          horizontal={true}
+          showsHorizontalScrollIndicator={false}
+          style={styles.horizontalScroll}
         >
-          <Icon name="bell" size={24} color="#545454" />
-        </TouchableOpacity>
+          <View style={styles.timeBox}>
+            <Text style={styles.timeLabel}>Rendered Time</Text>
+            <Text style={styles.timeNumber}>
+              {studentDetails.renderedTime} hrs
+            </Text>
+            <View style={[styles.colorBar, { backgroundColor: "#0b9ca7" }]} />
+          </View>
+          <View style={styles.remainingTimeBox}>
+            <Text style={styles.timeLabel}>Remaining Time</Text>
+            <Text style={styles.timeNumber}>
+              {studentDetails.remainingTime} hrs
+            </Text>
+            <View style={[styles.colorBar, { backgroundColor: "#0b9ca7" }]} />
+          </View>
+          <View style={styles.requiredDurationBox}>
+            <Text style={styles.timeLabel}>Required Duration</Text>
+            <Text style={styles.timeNumber}>
+              {studentDetails.requiredTime} hrs
+            </Text>
+            <View style={[styles.colorBar, { backgroundColor: "#0b9ca7" }]} />
+          </View>
+        </ScrollView>
       </View>
 
-      {/* Header */}
-      <View style={styles.header}>
-        <Image source={getProfileImage()} style={styles.logo} />
-        <Text style={styles.greetingText}>
-          Hello there, {studentDetails.firstName}! 👋
-        </Text>
+      {/* Today's Appointment Section */}
+      <View style={styles.exploreContainer}>
+        <Text style={styles.exploreText}>Explore</Text>
+        {/* Add your appointment list here */}
       </View>
-
-      {/* Rendered Time Information */}
-      <View style={styles.timeContainer}>
-        <View style={styles.timeBox}>
-          <Text style={styles.timeLabel}>Rendered Time</Text>
-          <Text style={styles.timeNumber}>
-            {studentDetails.renderedTime} hrs
-          </Text>
-        </View>
-        <View style={styles.remainingTimeBox}>
-          <Text style={styles.remainingTimeLabel}>Remaining Time</Text>
-          <Text style={styles.timeNumberSmall}>
-            {studentDetails.remainingTime} hrs
-          </Text>
-        </View>
-        <View style={styles.requiredDurationBox}>
-          <Text style={styles.requiredDurationLabel}>Required Duration</Text>
-          <Text style={styles.timeNumberSmall}>
-            {" "}
-            {studentDetails.requiredTime}
-          </Text>
-        </View>
-      </View>
-
-      <CalendarComponent />
-      {/* Time Schedule Component */}
-      <TimeSchedule />
-      <AnnouncementModal
-        isVisible={modalVisible}
-        message={`**${announcement.type}**: ${announcement.content}`}
-        onClose={() => setModalVisible(false)}
-      />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  containerr: {
     flex: 1,
-    backgroundColor: "#fff",
-    padding: 16,
+    backgroundColor: "#f5f5f5",
   },
-  headerContainer: {
+  headerBackground: {
+    backgroundColor: "#0b9ca7",
+    paddingVertical: 20,
+    paddingHorizontal: 15,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+  },
+  headerr: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 2,
-    marginBottom: 2, // Space between OJTMS and header
   },
-  ojtmsContainer: {
-    alignSelf: "flex-start", // Align to the left
+  loggo: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
   },
-  notificationButton: {
-    padding: 8, // Padding for touch area around the icon
-  },
-  ojtmsText: {
-    fontSize: 24, // Adjust size as needed
-    fontWeight: "bold",
-    textShadowColor: "#645757", // Shadow color
-    textShadowOffset: { width: 1, height: 2 }, // Shadow offset (x, y)
-    textShadowRadius: 2, // Shadow blur radius
-  },
-  ojText: {
-    color: "#007487",
-  },
-  tText: {
-    color: "#007487",
-  },
-  msText: {
-    color: "#007487",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-    gap: 10,
-    marginTop: 10, // Adjusted space above the header if needed
-  },
-  greetingText: {
+  greetingTextt: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#111",
+    color: "#fff",
+    flex: 1, // Allow the text to take up available space
+    marginLeft: 10, // Add some spacing between the image and text
   },
-  logo: {
-    width: 60,
-    height: 60,
-    borderRadius: 50,
-    overflow: "hidden",
+  firstNameText: {
+    fontWeight: "bold",
+    fontSize: 18,
+    color: "#fff",
   },
-  timeContainer: {
+  notificationIconContainer: {
+    bottom: 6.5,
+    marginLeft: 10, // Adjust spacing to match the Header component
+  },
+  searchContainer: {
+    marginTop: 30,
+    backgroundColor: "#fff",
+    borderRadius: 15,
+    paddingHorizontal: 10,
+    height: 40,
+    justifyContent: "center",
+    marginBottom: 7,
+  },
+  searchInput: {
+    fontSize: 16,
+  },
+  overviewContainer: {
+    alignItems: "flex-start",
+    width: "100%",
+    marginBottom: 10,
+    marginTop: 12,
+    paddingHorizontal: 10,
+  },
+  overviewText: {
+    fontSize: 19,
+    fontWeight: "bold",
+    color: "#000",
+    marginLeft: 5,
+  },
+  horizontalScroll: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
+    marginTop: 5,
   },
   timeBox: {
-    backgroundColor: "#0A77E4",
+    backgroundColor: "#fff",
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
-    width: "32%",
+    width: 120,
+    marginHorizontal: 5,
   },
   remainingTimeBox: {
-    backgroundColor: "#E14B62",
+    backgroundColor: "#fff",
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
-    width: "32%",
+    width: 120,
+    marginHorizontal: 5,
   },
   requiredDurationBox: {
-    backgroundColor: "#FC8210",
+    backgroundColor: "#fff",
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
-    width: "32%",
+    width: 120,
+    marginHorizontal: 5,
   },
   timeNumber: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#fff",
-  },
-  timeNumberSmall: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#fff",
+    color: "#000",
   },
   timeLabel: {
-    fontSize: 12,
-    color: "#fff",
+    fontSize: 15,
+    color: "#000",
   },
-  remainingTimeLabel: {
-    fontSize: 12,
-    color: "#fff",
+  colorBar: {
+    height: 5,
+    width: "100%",
+    marginTop: 10,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
   },
-  requiredDurationLabel: {
-    fontSize: 12,
-    color: "#fff",
+  exploreContainer: {
+    paddingHorizontal: 20,
+    marginTop: 20,
+  },
+  exploreText: {
+    fontSize: 19,
+    fontWeight: "bold",
+    color: "#000",
   },
 });

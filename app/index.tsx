@@ -1,6 +1,5 @@
 import { StatusBar } from "react-native";
 import { StyleSheet } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import WelcomeLoginScreen from "./WelcomeLoginScreen";
 
@@ -40,21 +39,19 @@ export default function App() {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <NavigationContainer>
-        {/* Navigation stack */}
-        <Stack.Navigator>
-          <Stack.Screen
-            name="OJTMS"
-            component={WelcomeLoginScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="(tabs)"
-            component={TabLayout}
-            options={{ headerShown: false }}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
+      {/* Navigation stack */}
+      <Stack.Navigator>
+        <Stack.Screen
+          name="OJTMS"
+          component={WelcomeLoginScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="(tabs)"
+          component={TabLayout}
+          options={{ headerShown: false }}
+        />
+      </Stack.Navigator>
     </ThemeProvider>
   );
 }

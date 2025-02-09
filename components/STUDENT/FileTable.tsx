@@ -7,69 +7,85 @@ interface FileTableProps {
 
 const FileTable: React.FC<FileTableProps> = ({ data }) => {
   return (
-    <View style={styles.tableContainer}>
-      <ScrollView>
-        <View style={styles.tableRow}>
-          <Text style={styles.tableHeader}>Date</Text>
-          <Text style={styles.tableHeader}>Uploaded Files</Text>
-          <Text style={styles.tableHeader}>Remarks</Text>
-        </View>
-        {data.map((report, index) => (
-          <View key={index} style={styles.tableRow}>
-            <Text style={styles.tableData}>{report.date}</Text>
-            <View style={styles.fileContainer}>
-              {report.fileName && report.fileName.startsWith("file://") ? (
-                <Image
-                  source={{ uri: report.fileName }}
-                  style={styles.image}
-                  resizeMode="contain"
-                />
-              ) : (
-                <Text style={styles.tableData}>{report.fileName || "-"}</Text>
-              )}
+    <ScrollView style={styles.container}>
+      <Text style={styles.heading}>Details</Text>
+
+      {data.map((report, index) => (
+        <View key={index} style={styles.reportContainer}>
+          {report.fileName && report.fileName.startsWith("file://") ? (
+            <Image
+              source={{ uri: report.fileName }}
+              style={styles.image}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.imagePlaceholder}>
+              <Text>No Image</Text>
             </View>
-            <Text style={styles.tableData}>{report.remarks}</Text>
+          )}
+          <View style={styles.textContainer}>
+            <Text style={styles.dateText}>{report.date}</Text>
+            <Text style={styles.remarksText}>{report.remarks}</Text>
           </View>
-        ))}
-      </ScrollView>
-    </View>
+        </View>
+      ))}
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  tableContainer: {
-    marginTop: 20,
+  container: {
+    flex: 1,
     width: "100%",
-    maxHeight: 500,
+    padding: 10,
   },
-  tableRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderColor: "#ddd",
-  },
-  tableHeader: {
-    fontSize: 16,
+  heading: {
+    fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
-    flex: 1,
-    textAlign: "center",
+    color: "#000", // Matching theme color
+    textAlign: "left",
+    marginBottom: 0,
+    bottom: 15,
   },
-  tableData: {
-    fontSize: 14,
-    color: "#555",
-    flex: 1,
-    textAlign: "center",
+  reportContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
   },
-  fileContainer: {
-    flex: 1,
+  image: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+  },
+  imagePlaceholder: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+    backgroundColor: "#ddd",
     justifyContent: "center",
     alignItems: "center",
   },
-  image: {
-    width: 50,
-    height: 50,
+  textContainer: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  dateText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  remarksText: {
+    fontSize: 14,
+    color: "#555",
+    marginTop: 5,
   },
 });
 
