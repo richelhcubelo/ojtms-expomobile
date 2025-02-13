@@ -48,7 +48,6 @@ export default function WelcomeLoginScreen() {
             </View>
           </TouchableOpacity>
 
-          {/* Back button moved here */}
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>

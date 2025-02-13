@@ -79,6 +79,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 10 },
     shadowRadius: 10,
     shadowOpacity: 0.1,
+    zIndex: 50, // Ensure this is lower than the profileOverlay's zIndex
   },
 
   tabbarItem: {

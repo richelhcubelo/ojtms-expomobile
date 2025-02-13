@@ -25,23 +25,10 @@ export default function DTRScreen() {
     <View style={styles.container}>
       <Header title="DTR" showBackButton={true} onBackPress={handleGoBack} />
       <ScrollView style={styles.container}>
-        <Header title="DTR" showBackButton={true} onBackPress={handleGoBack} />
-
-        <View style={styles.container1}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => setModalVisible(true)}
-          >
-            <Icon name="download" size={20} color="#fff" style={styles.icon} />
-            <Text style={styles.buttonText}>Download DTR</Text>
-          </TouchableOpacity>
-        </View>
-
         <View style={styles.container2}>
           <DTRTable />
         </View>
       </ScrollView>
-      <FloatingDownloadButton onPress={() => setModalVisible(true)} />
     </View>
   );
 }
@@ -59,26 +46,6 @@ const styles = StyleSheet.create({
   },
   container2: {
     flex: 1,
-    paddingHorizontal: 10, // Add horizontal padding for better spacing
-  },
-  button: {
-    backgroundColor: "#0A77E4",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    width: "90%",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center",
-    marginLeft: 5,
-  },
-  icon: {
-    marginRight: 2,
+    paddingHorizontal: 0, // Add horizontal padding for better spacing
   },
 });
