@@ -13,7 +13,9 @@ export default function TabLayout() {
   return (
     <>
       <Tabs
-        tabBar={(props) => <TabBar {...props} />}
+        tabBar={(props) => (
+          <TabBar {...props} isProfileVisible={isProfileVisible} />
+        )}
         screenOptions={{
           headerShown: false,
         }}
@@ -29,7 +31,7 @@ export default function TabLayout() {
           listeners={{
             tabPress: () => closeProfile(),
           }}
-          initialParams={{ openProfile }} // Pass openProfile as a route param
+          initialParams={{ openProfile, setIsProfileVisible }} // Pass both functions
         />
         <Tabs.Screen
           name="upload"
@@ -64,8 +66,6 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
-
-      {isProfileVisible && <Profile onClose={closeProfile} />}
     </>
   );
 }

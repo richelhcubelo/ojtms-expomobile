@@ -17,9 +17,15 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import NotificationIcon from "@/components/NotificationIcon";
 import { useRouter } from "expo-router";
 import Profile from "../Sidebar/Profile";
+import Explore from "../Home/Explore";
 
 type HomeScreenRouteProp = RouteProp<
-  { home: { openProfile: () => void } },
+  {
+    home: {
+      openProfile: () => void;
+      setIsProfileVisible: (visible: boolean) => void;
+    };
+  },
   "home"
 >;
 
@@ -28,7 +34,8 @@ export default function HomeScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const slideAnim = useRef(new Animated.Value(-300)).current; // Initial position off-screen
   const navigation = useNavigation();
-  const route = useRoute();
+  const route = useRoute<HomeScreenRouteProp>();
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [announcement, setAnnouncement] = useState({
@@ -42,13 +49,16 @@ export default function HomeScreen() {
     requiredTime: 0,
     studentSex: "N/A",
   });
+  const [isOverlayVisible, setIsOverlayVisible] = useState(false);
 
   const openProfile = () => {
+    setIsOverlayVisible(true); // Show overlay
     Animated.timing(slideAnim, {
       toValue: 0, // Slide in to 0 (fully visible)
-      duration: 300,
+      duration: 500,
       useNativeDriver: true,
     }).start();
+    route.params?.openProfile();
   };
 
   const closeProfile = () => {
@@ -56,7 +66,10 @@ export default function HomeScreen() {
       toValue: -300, // Slide out to the left
       duration: 300,
       useNativeDriver: true,
-    }).start();
+    }).start(() => {
+      setIsOverlayVisible(false); // Hide overlay after animation completes
+    });
+    route.params?.setIsProfileVisible(false);
   };
 
   const fetchStudentDetails = async () => {
@@ -205,45 +218,48 @@ export default function HomeScreen() {
             <View style={styles.timeBox}>
               <Text style={styles.timeLabel}>Rendered Time</Text>
               <Text style={styles.timeNumber}>
-                {studentDetails.renderedTime} hrs
+                {studentDetails.renderedTime}
+                <Text style={styles.texthours}> hrs</Text>
               </Text>
               <View style={[styles.colorBar, { backgroundColor: "#0b9ca7" }]} />
             </View>
-            <View style={styles.remainingTimeBox}>
+            <View style={styles.timeBox}>
               <Text style={styles.timeLabel}>Remaining Time</Text>
               <Text style={styles.timeNumber}>
-                {studentDetails.remainingTime} hrs
+                {studentDetails.remainingTime}
+                <Text style={styles.texthours}> hrs</Text>
               </Text>
               <View style={[styles.colorBar, { backgroundColor: "#0b9ca7" }]} />
             </View>
-            <View style={styles.requiredDurationBox}>
+            <View style={styles.timeBox}>
               <Text style={styles.timeLabel}>Required Duration</Text>
               <Text style={styles.timeNumber}>
-                {studentDetails.requiredTime} hrs
+                {studentDetails.requiredTime}
+                <Text style={styles.texthours}> hrs</Text>
               </Text>
               <View style={[styles.colorBar, { backgroundColor: "#0b9ca7" }]} />
             </View>
           </ScrollView>
-        </View>
 
-        <View style={styles.exploreContainer}>
-          <Text style={styles.exploreText}>Explore</Text>
+          <ScrollView style={styles.explore}>
+            <View style={styles.exploreContainer}>
+              <Text style={styles.exploreText}>Explore</Text>
+              <Explore /> {/* Include the Explore component here */}
+            </View>
+          </ScrollView>
         </View>
       </ScrollView>
 
-      {/* Profile Overlay */}
-      <Animated.View
-        style={[
-          styles.profileOverlay,
-          {
-            transform: [{ translateX: slideAnim }],
-            bottom: 0, // Adjust this to cover the tab bar
-            zIndex: 100, // Ensure this is higher than the tab bar's zIndex
-          },
-        ]}
-      >
-        <Profile onClose={closeProfile} />
-      </Animated.View>
+      {/* Overlay */}
+      {isOverlayVisible && (
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
+          onPress={closeProfile}
+        />
+      )}
+
+      <Profile slideAnim={slideAnim} onClose={closeProfile} />
     </View>
   );
 }
@@ -313,52 +329,41 @@ const styles = StyleSheet.create({
     color: "#000",
     marginLeft: 5,
   },
+  texthours: {
+    fontSize: 12,
+  },
   horizontalScroll: {
     flexDirection: "row",
-    marginTop: 5,
+    marginTop: 10,
   },
   timeBox: {
     backgroundColor: "#fff",
-    padding: 15,
+    padding: 16,
     borderRadius: 10,
     alignItems: "center",
-    width: 120,
+    width: 135,
     marginHorizontal: 5,
-  },
-  remainingTimeBox: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-    width: 120,
-    marginHorizontal: 5,
-  },
-  requiredDurationBox: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-    width: 120,
-    marginHorizontal: 5,
+    elevation: 3,
   },
   timeNumber: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#000",
+    top: 6,
   },
   timeLabel: {
-    fontSize: 15,
+    fontSize: 17,
     color: "#000",
   },
   colorBar: {
     height: 5,
     width: "100%",
-    marginTop: 10,
+    marginTop: 20,
     borderBottomLeftRadius: 10,
     borderBottomRightRadius: 10,
   },
   exploreContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
     marginTop: 20,
   },
   exploreText: {
@@ -366,18 +371,16 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#000",
   },
-  profileOverlay: {
+  overlay: {
     position: "absolute",
     top: 0,
     left: 0,
-    width: "75%",
+    width: "100%",
     height: "100%",
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: -2, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 10,
-    elevation: 10,
-    zIndex: 1000,
+    backgroundColor: "rgba(0, 0, 0, 0.3)", // Semi-transparent black
+    zIndex: 99, // Ensure it's below the profile but above other content
+  },
+  explore: {
+    width: "100%",
   },
 });

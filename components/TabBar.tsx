@@ -3,14 +3,22 @@ import React from "react";
 import TabBarButton from "./TabBarButton";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 
-const TabBar: React.FC<BottomTabBarProps> = ({
+interface TabBarProps extends BottomTabBarProps {
+  isProfileVisible: boolean;
+}
+
+const TabBar: React.FC<TabBarProps> = ({
   state,
   descriptors,
   navigation,
+  isProfileVisible,
 }) => {
   const primaryColor = "#ffffff";
   const greyColor = "#ffffff";
 
+  if (isProfileVisible) {
+    return null;
+  }
   return (
     <View style={styles.tabbar}>
       {state.routes.map((route, index) => {
@@ -79,7 +87,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 10 },
     shadowRadius: 10,
     shadowOpacity: 0.1,
-    zIndex: 50, // Ensure this is lower than the profileOverlay's zIndex
+    zIndex: 2000, // Ensure this is lower than the profileOverlay's zIndex
   },
 
   tabbarItem: {
