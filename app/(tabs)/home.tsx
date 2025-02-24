@@ -18,6 +18,7 @@ import NotificationIcon from "@/components/NotificationIcon";
 import { useRouter } from "expo-router";
 import Profile from "../Sidebar/Profile";
 import Explore from "../Home/Explore";
+import FloatingInOutButton from "@/components/FloatingInOutButton";
 
 type HomeScreenRouteProp = RouteProp<
   {
@@ -244,7 +245,7 @@ export default function HomeScreen() {
           <ScrollView style={styles.explore}>
             <View style={styles.exploreContainer}>
               <Text style={styles.exploreText}>Explore</Text>
-              <Explore /> {/* Include the Explore component here */}
+              <Explore />
             </View>
           </ScrollView>
         </View>
@@ -260,6 +261,7 @@ export default function HomeScreen() {
       )}
 
       <Profile slideAnim={slideAnim} onClose={closeProfile} />
+      <FloatingInOutButton onPress={() => setModalVisible(true)} />
     </View>
   );
 }

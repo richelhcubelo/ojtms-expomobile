@@ -1,12 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  Modal,
+  Linking,
+  Alert,
 } from "react-native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import { router } from "expo-router";
 
 type CustomButtonProps = {
   iconName: string;
@@ -14,7 +18,6 @@ type CustomButtonProps = {
   onPress: () => void;
 };
 
-// Button Component
 const CustomButton: React.FC<CustomButtonProps> = ({
   iconName,
   buttonText,
@@ -22,7 +25,6 @@ const CustomButton: React.FC<CustomButtonProps> = ({
 }) => {
   return (
     <View style={styles.buttonContainer}>
-      {/* Black strip on the left side (10% width) */}
       <View style={styles.blackStrip}>
         <MaterialIcons name={iconName} size={24} color="#fff" />
       </View>
@@ -33,21 +35,19 @@ const CustomButton: React.FC<CustomButtonProps> = ({
   );
 };
 
-// Explore Component
 const Explore = () => {
+  const [isModalVisible, setModalVisible] = useState(false);
+
   const handleLocation = () => {
-    console.log("Location clicked");
-    // Add your logic here
+    router.push("/Home/Location");
   };
 
   const handleCalendar = () => {
-    console.log("Calendar clicked");
-    // Add your logic here
+    router.push("/Home/Calendar");
   };
 
   const handleTime = () => {
-    console.log("Time clicked");
-    // Add your logic here
+    router.push("/Home/Time");
   };
 
   return (
@@ -69,11 +69,53 @@ const Explore = () => {
         buttonText="Time"
         onPress={handleTime}
       />
+
+      {/* <Modal
+        transparent={true}
+        visible={isModalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <MaterialIcons name="location-on" size={30} color="#0b9ca7" />
+            <Text style={styles.modalTitle}>
+              Allow OTMS to access this device’s location?
+            </Text>
+            <View style={styles.imageContainer}>
+              <View style={styles.locationOption}>
+                <MaterialIcons name="gps-fixed" size={50} color="#0b9ca7" />
+                <Text style={styles.optionText}>Precise</Text>
+              </View>
+              <View style={styles.locationOption}>
+                <MaterialIcons name="map" size={50} color="gray" />
+                <Text style={styles.optionText}>Approximate</Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={handleWhileUsingApp}
+            >
+              <Text style={styles.modalButtonText}>While using the app</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={handleOnlyThisTime}
+            >
+              <Text style={styles.modalButtonText}>Only this time</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.cancelButtonText}>Don’t allow</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>*/}
     </View>
   );
 };
 
-// Get the screen width
 const screenWidth = Dimensions.get("window").width;
 
 const styles = StyleSheet.create({
@@ -86,28 +128,85 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     padding: 5,
-    flexDirection: "row", // Ensure the black strip and button are in a row
-    alignItems: "center", // Center items vertically
+    flexDirection: "row",
+    alignItems: "center",
   },
   blackStrip: {
-    width: screenWidth * 0.18, // 10% of the screen width
-    backgroundColor: "#0b9ca7", // Black color
-    height: "100%", // Full height of the container
-    borderTopLeftRadius: 15, // Match the container's border radius
+    width: screenWidth * 0.18,
+    backgroundColor: "#0b9ca7",
+    height: "100%",
+    borderTopLeftRadius: 15,
     borderBottomLeftRadius: 15,
-    alignItems: "center", // Center icon horizontally
+    alignItems: "center",
     paddingVertical: 15,
   },
   button: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,
-    flex: 1, // Take up the remaining space
+    flex: 1,
   },
   buttonText: {
     fontSize: 17,
     color: "#000",
     marginLeft: 20,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    width: screenWidth * 0.85,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 20,
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginVertical: 15,
+  },
+  imageContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  locationOption: {
+    alignItems: "center",
+  },
+  optionText: {
+    marginTop: 5,
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  modalButton: {
+    backgroundColor: "#E3F2FD",
+    padding: 12,
+    borderRadius: 5,
+    width: "100%",
+    alignItems: "center",
+    marginVertical: 5,
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#0b9ca7",
+  },
+  cancelButton: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#D3D3D3",
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "black",
   },
 });
 

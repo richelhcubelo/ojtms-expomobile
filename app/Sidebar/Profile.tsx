@@ -10,7 +10,8 @@ import {
   PanResponder,
   Dimensions,
 } from "react-native";
-import { Ionicons, Entypo, Octicons } from "@expo/vector-icons"; // Import Entypo
+import { Ionicons, Entypo, Octicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router"; // Import useRouter from expo-router
 
 interface ProfileProps {
   slideAnim: Animated.Value;
@@ -18,6 +19,7 @@ interface ProfileProps {
 }
 
 const Profile: React.FC<ProfileProps> = ({ slideAnim, onClose }) => {
+  const router = useRouter(); // Initialize the router
   const screenWidth = Dimensions.get("window").width;
   const profileWidth = screenWidth * 0.2;
   const currentTranslateXRef = React.useRef(0);
@@ -61,12 +63,24 @@ const Profile: React.FC<ProfileProps> = ({ slideAnim, onClose }) => {
 
   const handleCompanyDetailsClick = () => {
     console.log("Company Details clicked");
-    // Add your logic here
+    router.push("/Sidebar/CompanyDetails");
   };
 
   const handleChangePasswordClick = () => {
     console.log("Change Password clicked");
-    // Add your logic here
+    router.push("/Sidebar/ChangePassword");
+  };
+
+  const handleInfoClick = () => {
+    // Pass profile details to the Details screen
+    router.push({
+      pathname: "/Sidebar/StudentDetails",
+      params: {
+        name: "Richel Cubelo",
+        id: "186744",
+        image: require("@/assets/images/profilesample.png"), // Pass the image path
+      },
+    });
   };
 
   return (
@@ -89,7 +103,7 @@ const Profile: React.FC<ProfileProps> = ({ slideAnim, onClose }) => {
               <Text style={styles.name}>Richel Cubelo</Text>
               <Text style={styles.id}>186744</Text>
             </View>
-            <TouchableOpacity style={styles.editIcon}>
+            <TouchableOpacity style={styles.editIcon} onPress={handleInfoClick}>
               <Octicons name="info" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
