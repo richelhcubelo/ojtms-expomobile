@@ -195,6 +195,7 @@ const styles = StyleSheet.create({
   },
   input: {
     padding: 15,
+    flex: 1,
   },
   button: {
     width: "100%",
@@ -235,7 +236,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 24,
-    color: "#000",
+    color: "#fff",
   },
   fullScreenButton: {
     flex: 1,

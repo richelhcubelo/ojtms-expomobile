@@ -10,6 +10,7 @@ import {
   Easing,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import * as Location from "expo-location"; // Import expo-location
 
 const FloatingInOutButton: React.FC<{ onPress: () => void }> = ({
   onPress,
@@ -63,29 +64,41 @@ const FloatingInOutButton: React.FC<{ onPress: () => void }> = ({
     setIsModalVisible(true);
   };
 
-  const handleConfirm = () => {
-    // Toggle the timer state
-    setIsTimerOn((prev) => !prev);
+  const handleConfirm = async () => {
+    // Request location permission
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status === "granted") {
+      // Permission granted, get the current location
+      const location = await Location.getCurrentPositionAsync({});
+      console.log("User Location:", location);
 
-    // Trigger scaling animation
-    Animated.sequence([
-      Animated.timing(scaleValue, {
-        toValue: 0.8,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleValue, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
+      // Toggle the timer state
+      setIsTimerOn((prev) => !prev);
 
-    // Close the modal
-    setIsModalVisible(false);
+      // Trigger scaling animation
+      Animated.sequence([
+        Animated.timing(scaleValue, {
+          toValue: 0.8,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleValue, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
 
-    // Call the onPress prop if needed
-    onPress();
+      // Close the modal
+      setIsModalVisible(false);
+
+      // Call the onPress prop if needed
+      onPress();
+    } else {
+      // Permission denied
+      console.log("Location permission denied");
+      setIsModalVisible(false); // Close the modal if permission is denied
+    }
   };
 
   const handleCancel = () => {
@@ -180,13 +193,13 @@ const FloatingInOutButton: React.FC<{ onPress: () => void }> = ({
 const styles = StyleSheet.create({
   floatingButtonContainer: {
     position: "absolute",
-    top: 560, // Adjust this value to position the button above the tab bar
+    top: 560,
     right: 40,
     alignItems: "center",
     justifyContent: "center",
   },
   gradientOutline: {
-    width: 80, // Adjust based on button size
+    width: 80,
     height: 80,
     borderRadius: 40,
     borderWidth: 2,

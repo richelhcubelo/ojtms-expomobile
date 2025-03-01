@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Animated,
   PanResponder,
   Dimensions,
+  Modal,
 } from "react-native";
 import { Ionicons, Entypo, Octicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router"; // Import useRouter from expo-router
@@ -20,6 +21,7 @@ interface ProfileProps {
 
 const Profile: React.FC<ProfileProps> = ({ slideAnim, onClose }) => {
   const router = useRouter(); // Initialize the router
+  const [modalVisible, setModalVisible] = useState(false);
   const screenWidth = Dimensions.get("window").width;
   const profileWidth = screenWidth * 0.2;
   const currentTranslateXRef = React.useRef(0);
@@ -83,6 +85,15 @@ const Profile: React.FC<ProfileProps> = ({ slideAnim, onClose }) => {
     });
   };
 
+  const handleLogout = () => {
+    setModalVisible(true);
+  };
+
+  const confirmLogout = () => {
+    setModalVisible(false);
+    router.push("/WelcomeLoginScreen");
+  };
+
   return (
     <Animated.View
       style={[styles.overlay, { transform: [{ translateX: slideAnim }] }]}
@@ -122,11 +133,47 @@ const Profile: React.FC<ProfileProps> = ({ slideAnim, onClose }) => {
               <Entypo name="chevron-small-right" size={24} color="#0b9ca7" />
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.logoutButton}>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Text style={styles.logoutButtonText}>Log Out</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(!modalVisible);
+        }}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalTopText}>Logout</Text>
+            <Text style={styles.modalText}>
+              Are you sure you want to logout?
+            </Text>
+            {/* Horizontal line above the buttons */}
+            <View style={styles.horizontalLine} />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              {/* Vertical line between buttons */}
+              <View style={styles.verticalLine} />
+              <TouchableOpacity
+                style={styles.yesButton}
+                onPress={confirmLogout}
+              >
+                <Text style={styles.yesButtonText}>Yes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Animated.View>
   );
 };
@@ -221,6 +268,72 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     color: "white",
     fontSize: 18,
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    justifyContent: "center",
+  },
+  modalTopText: {
+    textAlign: "center",
+    fontWeight: "bold",
+    fontSize: 20,
+    bottom: 10,
+  },
+  modalText: {
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "75%",
+    top: 17,
+  },
+  cancelButton: {
+    padding: 10,
+    borderRadius: 5,
+  },
+  cancelButtonText: {
+    color: "#0b9ca7",
+    fontSize: 16,
+  },
+  yesButton: {
+    padding: 10,
+    borderRadius: 5,
+  },
+  yesButtonText: {
+    color: "#ff9999",
+    fontSize: 16,
+  },
+  horizontalLine: {
+    borderBottomColor: "#ccc", // Light gray color for the line
+    borderBottomWidth: 1, // Thickness of the line
+    width: "100%", // Full width
+    marginBottom: 10, // Space below the line
+  },
+  verticalLine: {
+    borderLeftColor: "#ccc", // Light gray color for the line
+    borderLeftWidth: 1, // Thickness of the line
+    height: "100%", // Full height of the button container
+    marginHorizontal: 10, // Space between the buttons
   },
 });
 
