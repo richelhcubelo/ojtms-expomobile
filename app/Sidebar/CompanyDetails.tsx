@@ -1,27 +1,84 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView, TextInput } from "react-native";
-import NoNotifHeader from "@/components/NoNotifHeader"; // Adjust the import path as needed
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  ActivityIndicator,
+} from "react-native";
+import NoNotifHeader from "@/components/NoNotifHeader";
 import { useNavigation } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Config from "@/config";
 
 const CompanyDetails: React.FC = () => {
   const navigation = useNavigation();
+  const [studentDetails, setStudentDetails] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCompanyDetails = async () => {
+      try {
+        const studentId = await AsyncStorage.getItem("student_id");
+        if (!studentId) {
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(
+          `${Config.API_BASE_URL}/api/student-details?student_id=${studentId}`
+        );
+        const data = await response.json();
+
+        if (data.studentDetails) {
+          setStudentDetails(data.studentDetails);
+        }
+      } catch (error) {
+        console.error("Error fetching company details:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCompanyDetails();
+  }, []);
 
   const handleGoBack = () => {
     navigation.goBack();
   };
 
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <NoNotifHeader
+          title="Company Details"
+          showBackButton={true}
+          onBackPress={handleGoBack}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0b9ca7" />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <NoNotifHeader
         title="Company Details"
-        showBackButton={true} // Pass true to show the back button
-        onBackPress={handleGoBack} // Pass the function to handle back press
+        showBackButton={true}
+        onBackPress={handleGoBack}
       />
       <ScrollView style={styles.content}>
         {/* Company Name */}
         <View style={styles.detailItem}>
           <Text style={styles.label}>Company Name</Text>
-          <TextInput style={styles.input} value="Skyride" editable={false} />
+          <TextInput
+            style={styles.input}
+            value={studentDetails?.company_name || "N/A"}
+            editable={false}
+          />
         </View>
 
         {/* Company Address */}
@@ -29,7 +86,7 @@ const CompanyDetails: React.FC = () => {
           <Text style={styles.label}>Company Address</Text>
           <TextInput
             style={styles.input}
-            value="Bentig, Calape, Bohol"
+            value={studentDetails?.company_address || "N/A"}
             editable={false}
           />
         </View>
@@ -39,7 +96,7 @@ const CompanyDetails: React.FC = () => {
           <Text style={styles.label}>Supervisor Name</Text>
           <TextInput
             style={styles.input}
-            value="Ryan Amasora"
+            value={studentDetails?.company_mentor || "N/A"}
             editable={false}
           />
         </View>
@@ -49,7 +106,7 @@ const CompanyDetails: React.FC = () => {
           <Text style={styles.label}>Supervisor Contact #</Text>
           <TextInput
             style={styles.input}
-            value="+123 456 7890"
+            value={studentDetails?.company_contact || "N/A"}
             editable={false}
           />
         </View>
@@ -65,6 +122,11 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   detailItem: {
     marginBottom: 18,

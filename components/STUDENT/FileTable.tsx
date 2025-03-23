@@ -1,31 +1,45 @@
 import React from "react";
 import { View, Text, StyleSheet, ScrollView, Image } from "react-native";
 
+interface Document {
+  document_id: string;
+  date_uploaded: string;
+  remarks: string;
+  uploaded_file: string;
+}
+
 interface FileTableProps {
-  data: { date: string; remarks: string; fileName: string | null }[];
+  data: Document[];
 }
 
 const FileTable: React.FC<FileTableProps> = ({ data }) => {
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.heading}>Details</Text>
+      <Text style={styles.heading}>Upload History</Text>
 
-      {data.map((report, index) => (
-        <View key={index} style={styles.reportContainer}>
-          {report.fileName && report.fileName.startsWith("file://") ? (
-            <Image
-              source={{ uri: report.fileName }}
-              style={styles.image}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={styles.imagePlaceholder}>
-              <Text>No Image</Text>
-            </View>
-          )}
+      {data.map((document) => (
+        <View key={document.document_id} style={styles.reportContainer}>
+          <Image
+            source={{ uri: document.uploaded_file }}
+            style={styles.image}
+            resizeMode="cover"
+          />
           <View style={styles.textContainer}>
-            <Text style={styles.dateText}>{report.date}</Text>
-            <Text style={styles.remarksText}>{report.remarks}</Text>
+            <Text style={styles.dateText}>
+              {formatDate(document.date_uploaded)}
+            </Text>
+            <Text style={styles.remarksText}>{document.remarks}</Text>
           </View>
         </View>
       ))}
@@ -64,6 +78,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 10,
+    backgroundColor: "#f0f0f0",
   },
   imagePlaceholder: {
     width: 60,

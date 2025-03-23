@@ -13,6 +13,8 @@ import {
 } from "react-native";
 import { Ionicons, Entypo, Octicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router"; // Import useRouter from expo-router
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Config from "@/config";
 
 interface ProfileProps {
   slideAnim: Animated.Value;
@@ -23,15 +25,54 @@ const Profile: React.FC<ProfileProps> = ({ slideAnim, onClose }) => {
   const router = useRouter(); // Initialize the router
   const [modalVisible, setModalVisible] = useState(false);
   const screenWidth = Dimensions.get("window").width;
+  const [studentId, setStudentId] = useState<string | null>(null);
+  const [studentDetails, setStudentDetails] = useState<any>(null);
   const profileWidth = screenWidth * 0.2;
+  const [loading, setLoading] = useState(true);
   const currentTranslateXRef = React.useRef(0);
 
   useEffect(() => {
-    const listenerId = slideAnim.addListener(({ value }) => {
-      currentTranslateXRef.current = value;
-    });
-    return () => slideAnim.removeListener(listenerId);
-  }, [slideAnim]);
+    const loadStudentId = async () => {
+      try {
+        const id = await AsyncStorage.getItem("student_id");
+        setStudentId(id);
+      } catch (error) {
+        console.error("Error loading student ID:", error);
+        setLoading(false);
+      }
+    };
+    loadStudentId();
+  }, []);
+
+  useEffect(() => {
+    const fetchStudentDetails = async () => {
+      if (!studentId) return;
+
+      try {
+        const response = await fetch(
+          `${Config.API_BASE_URL}/api/student-details?student_id=${studentId}`
+        );
+        const data = await response.json();
+        if (data.studentDetails) {
+          setStudentDetails(data.studentDetails);
+        }
+      } catch (error) {
+        console.error("Error fetching student details:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudentDetails();
+  }, [studentId]);
+
+  const getProfileImage = () => {
+    if (studentDetails?.student_sex === "Male") {
+      return require("@/assets/images/male.png");
+    } else if (studentDetails?.student_sex === "Female") {
+      return require("@/assets/images/female.png");
+    }
+  };
 
   const panResponder = React.useRef(
     PanResponder.create({
@@ -74,13 +115,14 @@ const Profile: React.FC<ProfileProps> = ({ slideAnim, onClose }) => {
   };
 
   const handleInfoClick = () => {
-    // Pass profile details to the Details screen
+    if (!studentDetails) return;
+
     router.push({
       pathname: "/Sidebar/StudentDetails",
       params: {
-        name: "Richel Cubelo",
-        id: "186744",
-        image: require("@/assets/images/profilesample.png"), // Pass the image path
+        name: studentDetails.student_name,
+        id: studentDetails.student_schoolid,
+        studentSex: studentDetails.student_sex,
       },
     });
   };
@@ -104,15 +146,16 @@ const Profile: React.FC<ProfileProps> = ({ slideAnim, onClose }) => {
       <ScrollView style={styles.container}>
         <View style={styles.top}>
           <View style={styles.header}>
-            <Image
-              source={require("@/assets/images/profilesample.png")}
-              style={styles.profileImage}
-            />
+            <Image source={getProfileImage()} style={styles.profileImage} />
           </View>
           <View style={styles.name_id_icon}>
             <View style={styles.nameContainer}>
-              <Text style={styles.name}>Richel Cubelo</Text>
-              <Text style={styles.id}>186744</Text>
+              <Text style={styles.name}>
+                {studentDetails?.student_name || "Loading..."}
+              </Text>
+              <Text style={styles.id}>
+                {studentDetails?.student_schoolid || "Loading ID..."}
+              </Text>
             </View>
             <TouchableOpacity style={styles.editIcon} onPress={handleInfoClick}>
               <Octicons name="info" size={20} color="#fff" />

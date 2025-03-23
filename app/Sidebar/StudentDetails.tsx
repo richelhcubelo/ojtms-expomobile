@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,32 +6,84 @@ import {
   ScrollView,
   TextInput,
   Image,
+  ActivityIndicator,
 } from "react-native";
-import NoNotifHeader from "@/components/NoNotifHeader"; // Adjust the import path as needed
-import { useNavigation, useLocalSearchParams } from "expo-router";
+import NoNotifHeader from "@/components/NoNotifHeader";
+import { useNavigation } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Config from "@/config";
 
 const Details: React.FC = () => {
   const navigation = useNavigation();
-  const params = useLocalSearchParams(); // Get the parameters passed from the Profile screen
+  const [studentDetails, setStudentDetails] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStudentData = async () => {
+      try {
+        const studentId = await AsyncStorage.getItem("student_id");
+        if (!studentId) {
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(
+          `${Config.API_BASE_URL}/api/student-details?student_id=${studentId}`
+        );
+        const data = await response.json();
+
+        if (data.studentDetails) {
+          setStudentDetails(data.studentDetails);
+        }
+      } catch (error) {
+        console.error("Error fetching student details:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStudentData();
+  }, []);
+
+  const getProfileImage = () => {
+    if (studentDetails?.student_sex === "Male") {
+      return require("@/assets/images/male.png");
+    } else if (studentDetails?.student_sex === "Female") {
+      return require("@/assets/images/female.png");
+    }
+    return require("@/assets/images/profilesample.png");
+  };
 
   const handleGoBack = () => {
     navigation.goBack();
   };
 
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <NoNotifHeader
+          title="Student Details"
+          showBackButton={true}
+          onBackPress={handleGoBack}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0b9ca7" />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <NoNotifHeader
         title="Student Details"
-        showBackButton={true} // Pass true to show the back button
-        onBackPress={handleGoBack} // Pass the function to handle back press
+        showBackButton={true}
+        onBackPress={handleGoBack}
       />
       <ScrollView style={styles.content}>
         {/* Profile Image */}
         <View style={styles.header}>
-          <Image
-            source={require("@/assets/images/profilesample.png")}
-            style={styles.profileImage}
-          />
+          <Image source={getProfileImage()} style={styles.profileImage} />
         </View>
 
         {/* Full Name */}
@@ -39,20 +91,28 @@ const Details: React.FC = () => {
           <Text style={styles.label}>Full Name</Text>
           <TextInput
             style={styles.input}
-            value="Richel Cubelo"
+            value={studentDetails?.student_name || "N/A"}
             editable={false}
           />
         </View>
 
-        {/* School ID and Gender in one row */}
+        {/* School ID and Gender */}
         <View style={styles.rowContainer}>
           <View style={[styles.detailItem, styles.flexHalf]}>
             <Text style={styles.label}>School ID</Text>
-            <TextInput style={styles.input} value="123456" editable={false} />
+            <TextInput
+              style={styles.input}
+              value={studentDetails?.student_schoolid || "N/A"}
+              editable={false}
+            />
           </View>
           <View style={[styles.detailItem, styles.flexHalf]}>
             <Text style={styles.label}>Gender</Text>
-            <TextInput style={styles.input} value="Female" editable={false} />
+            <TextInput
+              style={styles.input}
+              value={studentDetails?.student_sex || "N/A"}
+              editable={false}
+            />
           </View>
         </View>
 
@@ -61,7 +121,7 @@ const Details: React.FC = () => {
           <Text style={styles.label}>Contact Number</Text>
           <TextInput
             style={styles.input}
-            value="+123 456 7890"
+            value={studentDetails?.student_contact || "N/A"}
             editable={false}
           />
         </View>
@@ -71,7 +131,7 @@ const Details: React.FC = () => {
           <Text style={styles.label}>Address</Text>
           <TextInput
             style={styles.input}
-            value="123 Main St, City, Country"
+            value={studentDetails?.student_address || "N/A"}
             editable={false}
           />
         </View>
@@ -81,7 +141,7 @@ const Details: React.FC = () => {
           <Text style={styles.label}>Email</Text>
           <TextInput
             style={styles.input}
-            value="cubelo@example.com"
+            value={studentDetails?.student_email || "N/A"}
             editable={false}
           />
         </View>
@@ -91,7 +151,7 @@ const Details: React.FC = () => {
           <Text style={styles.label}>Program</Text>
           <TextInput
             style={styles.input}
-            value="Bachelor of Science in Computer Science"
+            value={studentDetails?.program_name || "N/A"}
             editable={false}
           />
         </View>
@@ -108,20 +168,19 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   header: {
-    alignItems: "center", // Center the image horizontally
-    marginBottom: 20, // Add some space below the image
+    alignItems: "center",
+    marginBottom: 20,
   },
   profileImage: {
     width: 120,
     height: 120,
-    borderRadius: 60, // Make the image circular
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-    color: "#0b9ca7",
+    borderRadius: 60,
   },
   detailItem: {
     marginBottom: 18,
@@ -142,11 +201,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#f9f9f9",
   },
   rowContainer: {
-    flexDirection: "row", // Align items horizontally
-    justifyContent: "space-between", // Add space between the two fields
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   flexHalf: {
-    flex: 0.48, // Each field takes up 48% of the row's width
+    flex: 0.48,
   },
 });
 

@@ -6,14 +6,17 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Config from "@/config";
 
 interface AddReportModalProps {
   visible: boolean;
   onClose: () => void;
-  onAddReport: (remarks: string, fileUri: string | null) => void; // Keep fileUri for submission
+  onAddReport: (remarks: string, fileUri: string | null) => void;
 }
 
 const AddReportModal: React.FC<AddReportModalProps> = ({
@@ -22,52 +25,103 @@ const AddReportModal: React.FC<AddReportModalProps> = ({
   onAddReport,
 }) => {
   const [remarks, setRemarks] = useState("");
-  const [fileName, setFileName] = useState<string | null>(null); // Store the friendly file name
-  const [selectedFile, setSelectedFile] = useState<string | null>(null); // Store the actual URI for submission
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleFileSelection = async () => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (permissionResult.granted === false) {
-      alert("Permission to access camera roll is required!");
+    if (!permissionResult.granted) {
+      Alert.alert(
+        "Permission required",
+        "Need camera roll access to upload files"
+      );
       return;
     }
 
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true, // Enable editing
+        mediaTypes: ImagePicker.MediaTypeOptions.Images, // Updated to use MediaTypeOptions instead of MediaType
+        allowsEditing: true,
         aspect: [4, 3],
         quality: 1,
       });
 
-      if (!result.canceled && result.assets) {
-        const asset = result.assets[0]; // Access the first asset
-        const uri = asset.uri;
-
-        // Extract the filename from the asset
-        let extractedFileName = asset.fileName || uri.split("/").pop(); // Fallback to URI if fileName is not present
-        if (extractedFileName) {
-          setFileName(extractedFileName); // Set the friendly file name to state
-        } else {
-          setFileName("Unknown File"); // Fallback if no name could be determined
-        }
-
-        setSelectedFile(uri); // Store the actual URI for submission
-      } else {
-        console.log("User canceled the picker or no file selected.");
+      if (!result.canceled && result.assets?.[0]) {
+        const asset = result.assets[0];
+        setFileName(
+          asset.fileName || asset.uri.split("/").pop() || "Unknown File"
+        );
+        setSelectedFile(asset.uri);
       }
     } catch (err) {
       console.error("Error picking file:", err);
+      Alert.alert("Error", "Failed to select file");
     }
   };
 
-  const handleSubmit = () => {
-    onAddReport(remarks, selectedFile); // Submit the URI for actual upload
-    setRemarks("");
-    setFileName(null);
-    setSelectedFile(null);
+  const handleSubmit = async () => {
+    if (!selectedFile || !remarks) {
+      Alert.alert(
+        "Missing Information",
+        "Please select a file and enter remarks"
+      );
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      const studentId = await AsyncStorage.getItem("student_id");
+
+      if (!studentId) {
+        throw new Error("Student ID not found");
+      }
+
+      // Create FormData and append the file
+      const formData = new FormData();
+      formData.append("document", {
+        uri: selectedFile, // Use the file URI directly
+        name: fileName || `file-${Date.now()}.jpg`, // Provide a file name
+        type: "image/jpeg", // Set the file type
+      } as any); // Use `as any` to bypass TypeScript type checking for FormData
+
+      formData.append("student_id", studentId);
+      formData.append("remarks", remarks);
+
+      const response = await fetch(`${Config.API_BASE_URL}/documents`, {
+        method: "POST",
+        body: formData,
+        headers: {
+          "Content-Type": "multipart/form-data", // Set the content type for file upload
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Upload failed");
+      }
+
+      onAddReport(data.remarks, data.uploaded_file);
+
+      // Reset form
+      setRemarks("");
+      setFileName(null);
+      setSelectedFile(null);
+      onClose();
+    } catch (error) {
+      console.error("Upload error:", error);
+      Alert.alert(
+        "Upload Failed",
+        error instanceof Error
+          ? error.message
+          : "There was an error uploading your file"
+      );
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -75,15 +129,22 @@ const AddReportModal: React.FC<AddReportModalProps> = ({
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Add Report</Text>
+
           <View style={styles.addFilesContainer}>
             <MaterialIcons name="cloud-upload" size={40} color="#0b9ca7" />
-            <TouchableOpacity onPress={handleFileSelection}>
-              <Text style={styles.chooseFilesLink}>Choose Image</Text>
+            <TouchableOpacity
+              onPress={handleFileSelection}
+              disabled={isUploading}
+            >
+              <Text style={styles.chooseFilesLink}>
+                {isUploading ? "Uploading..." : "Choose Image"}
+              </Text>
             </TouchableOpacity>
-            {fileName ? ( // Display the friendly file name
+            {fileName && (
               <Text style={styles.selectedFileName}>{fileName}</Text>
-            ) : null}
+            )}
           </View>
+
           <TextInput
             style={styles.input}
             placeholder="Enter remarks..."
@@ -91,16 +152,32 @@ const AddReportModal: React.FC<AddReportModalProps> = ({
             onChangeText={setRemarks}
             multiline
             numberOfLines={4}
+            editable={!isUploading}
           />
+
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+            <TouchableOpacity
+              style={[
+                styles.cancelButton,
+                isUploading && styles.disabledButton,
+              ]}
+              onPress={onClose}
+              disabled={isUploading}
+            >
               <Text style={styles.buttonText}>Cancel</Text>
             </TouchableOpacity>
+
             <TouchableOpacity
-              style={styles.submitButton}
+              style={[
+                styles.submitButton,
+                isUploading && styles.disabledButton,
+              ]}
               onPress={handleSubmit}
+              disabled={isUploading}
             >
-              <Text style={styles.buttonText}>Submit</Text>
+              <Text style={styles.buttonText}>
+                {isUploading ? "Submitting..." : "Submit"}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -149,6 +226,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: "#555",
     fontStyle: "italic",
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   input: {
     height: 120,

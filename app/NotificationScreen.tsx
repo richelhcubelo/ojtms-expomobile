@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,52 +7,15 @@ import {
   TouchableOpacity,
   Modal,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import NoNotifHeader from "@/components/NoNotifHeader";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import AntDesign from "react-native-vector-icons/AntDesign";
 import Ionicons from "react-native-vector-icons/Ionicons";
-
-const notifications = [
-  {
-    id: 1,
-    type: "REMINDERS",
-    date: "2023-10-01",
-    content: "To all in the Skyride Company, I will visit you at 3am today.",
-  },
-  {
-    id: 2,
-    type: "GENERAL ANNOUNCEMENT",
-    date: "2023-10-02",
-    content: "Monthly meeting will be held on October 5th at 10am.",
-  },
-  {
-    id: 3,
-    type: "URGENT",
-    date: "2023-10-03",
-    content: "Urgent server maintenance scheduled for tonight at 11pm.",
-  },
-  {
-    id: 4,
-    type: "GENERAL ANNOUNCEMENT",
-    date: "2023-10-02",
-    content: "Monthly meeting will be held on October 5th at 10am.",
-  },
-  {
-    id: 5,
-    type: "POLICY ANNOUNCEMENT",
-    date: "2023-10-04",
-    content: "New company policies will be effective starting next week.",
-  },
-  {
-    id: 6,
-    type: "REMINDERS",
-    date: "2023-10-01",
-    content:
-      "To all in the Skyride Company, I will visit you at 3am today. To all in the Skyride Company, I will visit you at 3am today. I will visit you at 3am today",
-  },
-];
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Config from "@/config";
 
 type NotificationType =
   | "REMINDERS"
@@ -60,12 +23,84 @@ type NotificationType =
   | "URGENT"
   | "POLICY ANNOUNCEMENT";
 
+interface Announcement {
+  id: number;
+  type: NotificationType;
+  date: string;
+  content: string;
+}
+
 const NotificationScreen: React.FC = () => {
   const router = useRouter();
-  const [selectedNotification, setSelectedNotification] = useState<any>(null);
+  const [selectedNotification, setSelectedNotification] =
+    useState<Announcement | null>(null);
   const [clickedNotifications, setClickedNotifications] = useState<number[]>(
     []
   );
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAnnouncements = async () => {
+      try {
+        const studentId = await AsyncStorage.getItem("student_id");
+        if (!studentId) {
+          throw new Error("Student ID not found in AsyncStorage");
+        }
+
+        const response = await fetch(
+          `${Config.API_BASE_URL}/api/latest-announcement?student_id=${studentId}`
+        );
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to fetch announcements");
+        }
+
+        const transformedData: Announcement[] = data.announcements.map(
+          (item: any) => ({
+            id: item.announce_id,
+            type: item.announcement_type,
+            date: item.announcement_date,
+            content: item.announcement_content,
+          })
+        );
+
+        if (isMounted) {
+          setAnnouncements(transformedData);
+          setError(null);
+        }
+      } catch (err) {
+        if (isMounted) {
+          if (err instanceof Error) {
+            setError(err.message);
+          } else {
+            setError("An unknown error occurred");
+          }
+          setAnnouncements([]);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    // Initial fetch
+    setLoading(true);
+    fetchAnnouncements();
+
+    // Set up polling every 30 seconds
+    const intervalId = setInterval(fetchAnnouncements, 30000);
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, []);
 
   const getIcon = (type: NotificationType) => {
     switch (type) {
@@ -117,7 +152,7 @@ const NotificationScreen: React.FC = () => {
     }
   };
 
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationClick = (notification: Announcement) => {
     setSelectedNotification(notification);
     if (!clickedNotifications.includes(notification.id)) {
       setClickedNotifications([...clickedNotifications, notification.id]);
@@ -133,34 +168,46 @@ const NotificationScreen: React.FC = () => {
       <NoNotifHeader
         title="Notifications"
         showBackButton={true}
-        onBackPress={() => {
-          router.back();
-        }}
+        onBackPress={() => router.back()}
       />
       <ScrollView style={styles.scrollView}>
-        {notifications.map((notification) => (
-          <TouchableOpacity
-            key={notification.id}
-            style={[
-              styles.notificationBox,
-              {
-                backgroundColor: clickedNotifications.includes(notification.id)
-                  ? "#fff"
-                  : "#e3f2fd",
-              },
-            ]}
-            onPress={() => handleNotificationClick(notification)}
-          >
-            {getIcon(notification.type as NotificationType)}
-            <View style={styles.notificationContent}>
-              <Text style={styles.notificationType}>{notification.type}</Text>
-              <Text style={styles.notificationDate}>{notification.date}</Text>
-              <Text style={styles.notificationText} numberOfLines={2}>
-                {notification.content}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color="#0b9ca7"
+            //style={styles.loader}
+          />
+        ) : error ? (
+          <Text style={styles.errorText}>{error}</Text>
+        ) : announcements.length === 0 ? (
+          <Text style={styles.noAnnouncementsText}>No announcements found</Text>
+        ) : (
+          announcements.map((notification) => (
+            <TouchableOpacity
+              key={notification.id}
+              style={[
+                styles.notificationBox,
+                {
+                  backgroundColor: clickedNotifications.includes(
+                    notification.id
+                  )
+                    ? "#fff"
+                    : "#e3f2fd",
+                },
+              ]}
+              onPress={() => handleNotificationClick(notification)}
+            >
+              {getIcon(notification.type)}
+              <View style={styles.notificationContent}>
+                <Text style={styles.notificationType}>{notification.type}</Text>
+                <Text style={styles.notificationDate}>{notification.date}</Text>
+                <Text style={styles.notificationText} numberOfLines={2}>
+                  {notification.content}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
       </ScrollView>
 
       <Modal
@@ -267,6 +314,18 @@ const styles = StyleSheet.create({
   closeButtonText: {
     color: "#fff",
     fontSize: 16,
+  },
+  noAnnouncementsText: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginTop: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: "red",
+    textAlign: "center",
+    marginTop: 20,
   },
 });
 

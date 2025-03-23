@@ -10,23 +10,68 @@ import {
   Easing,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import * as Location from "expo-location"; // Import expo-location
+import {
+  getCurrentPositionAsync,
+  requestForegroundPermissionsAsync,
+} from "expo-location";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import Config from "../config"; // Ensure this is set correctly
 
 const FloatingInOutButton: React.FC<{ onPress: () => void }> = ({
   onPress,
 }) => {
-  const [isTimerOn, setIsTimerOn] = useState(false); // State to track timer status
-  const [isModalVisible, setIsModalVisible] = useState(false); // State to control modal visibility
-  const scaleValue = new Animated.Value(1); // Animation value for scaling
-  const rotateValue = new Animated.Value(0); // Animation value for rotating gradient
-  const floatValue = new Animated.Value(0); // Animation value for floating effect
+  const [isTimerOn, setIsTimerOn] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [studentId, setStudentId] = useState<string | null>(null);
+  const scaleValue = new Animated.Value(1);
+  const rotateValue = new Animated.Value(0);
+  const floatValue = new Animated.Value(0);
 
-  // Rotating gradient animation
+  // Fetch Student ID when component mounts
+  useEffect(() => {
+    const loadInitialState = async () => {
+      try {
+        const storedId = await AsyncStorage.getItem("student_id");
+        if (storedId) {
+          setStudentId(storedId);
+
+          // Load timer state for this student
+          const timerState = await AsyncStorage.getItem(
+            `timerState_${storedId}`
+          );
+          setIsTimerOn(timerState === "true");
+        }
+      } catch (error) {
+        console.error("Error loading initial state:", error);
+      }
+    };
+
+    loadInitialState();
+  }, []);
+  useEffect(() => {
+    const saveTimerState = async () => {
+      if (studentId) {
+        try {
+          await AsyncStorage.setItem(
+            `timerState_${studentId}`,
+            isTimerOn.toString()
+          );
+        } catch (error) {
+          console.error("Error saving timer state:", error);
+        }
+      }
+    };
+
+    saveTimerState();
+  }, [isTimerOn, studentId]);
+
+  // Rotating Gradient Animation
   useEffect(() => {
     const rotateAnimation = Animated.loop(
       Animated.timing(rotateValue, {
         toValue: 1,
-        duration: 2000,
+        duration: 900,
         easing: Easing.linear,
         useNativeDriver: true,
       })
@@ -34,21 +79,21 @@ const FloatingInOutButton: React.FC<{ onPress: () => void }> = ({
     rotateAnimation.start();
 
     return () => rotateAnimation.stop();
-  }, []);
+  }, [rotateValue]);
 
-  // Floating animation
+  // Floating Animation
   useEffect(() => {
     const floatAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(floatValue, {
           toValue: 1,
-          duration: 1000,
+          duration: 800,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.timing(floatValue, {
           toValue: 0,
-          duration: 1000,
+          duration: 800,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
@@ -57,20 +102,45 @@ const FloatingInOutButton: React.FC<{ onPress: () => void }> = ({
     floatAnimation.start();
 
     return () => floatAnimation.stop();
-  }, []);
+  }, [floatValue]);
 
   const handlePress = () => {
-    // Show the modal when the button is pressed
     setIsModalVisible(true);
   };
 
   const handleConfirm = async () => {
-    // Request location permission
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status === "granted") {
-      // Permission granted, get the current location
-      const location = await Location.getCurrentPositionAsync({});
-      console.log("User Location:", location);
+    try {
+      // Request location permissions
+      const { status } = await requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        console.log("Location permission denied");
+        setIsModalVisible(false);
+        return;
+      }
+
+      // Get user's current location
+      const location = await getCurrentPositionAsync({});
+      if (!location || !location.coords) {
+        console.error("Failed to retrieve location");
+        return;
+      }
+
+      const { latitude, longitude } = location.coords;
+      console.log("User Location:", latitude, longitude);
+
+      if (!studentId) {
+        console.error("Student ID not found.");
+        return;
+      }
+
+      // Send data to backend
+      const response = await axios.post(`${Config.API_BASE_URL}/student/time`, {
+        studentId: studentId,
+        scanTime: new Date().toISOString(),
+        address: `${latitude}, ${longitude}`,
+      });
+
+      console.log("Server Response:", response.data);
 
       // Toggle the timer state
       setIsTimerOn((prev) => !prev);
@@ -89,33 +159,25 @@ const FloatingInOutButton: React.FC<{ onPress: () => void }> = ({
         }),
       ]).start();
 
-      // Close the modal
       setIsModalVisible(false);
-
-      // Call the onPress prop if needed
-      onPress();
-    } else {
-      // Permission denied
-      console.log("Location permission denied");
-      setIsModalVisible(false); // Close the modal if permission is denied
+      onPress(); // Call parent function if needed
+    } catch (error) {
+      console.error("Error getting location or sending data:", error);
     }
   };
 
   const handleCancel = () => {
-    // Close the modal without changing the timer state
     setIsModalVisible(false);
   };
 
-  // Interpolate rotation for gradient
   const rotateInterpolation = rotateValue.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "360deg"],
   });
 
-  // Interpolate floating effect
   const floatInterpolation = floatValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -10], // Move up and down by 10 units
+    outputRange: [-10, 10],
   });
 
   return (
@@ -127,7 +189,6 @@ const FloatingInOutButton: React.FC<{ onPress: () => void }> = ({
           { transform: [{ translateY: floatInterpolation }] },
         ]}
       >
-        {/* Gradient Outline (using Animated.View) */}
         <Animated.View
           style={[
             styles.gradientOutline,
@@ -137,7 +198,6 @@ const FloatingInOutButton: React.FC<{ onPress: () => void }> = ({
           <View style={styles.gradient} />
         </Animated.View>
 
-        {/* Button */}
         <TouchableOpacity
           style={styles.floatingButton}
           onPress={handlePress}
@@ -154,12 +214,7 @@ const FloatingInOutButton: React.FC<{ onPress: () => void }> = ({
       </Animated.View>
 
       {/* Confirmation Modal */}
-      <Modal
-        visible={isModalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setIsModalVisible(false)}
-      >
+      <Modal visible={isModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalText}>
@@ -190,6 +245,7 @@ const FloatingInOutButton: React.FC<{ onPress: () => void }> = ({
   );
 };
 
+// Add your styles here
 const styles = StyleSheet.create({
   floatingButtonContainer: {
     position: "absolute",

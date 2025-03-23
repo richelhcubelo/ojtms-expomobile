@@ -6,10 +6,14 @@ import {
   Image,
   TextInput,
   TouchableOpacity,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import EvilIcons from "react-native-vector-icons/EvilIcons"; // Import EvilIcons
+import EvilIcons from "react-native-vector-icons/EvilIcons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Config from "@/config";
 
 export default function ChangePasswordScreen() {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -18,19 +22,67 @@ export default function ChangePasswordScreen() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleGetStarted = () => {
-    // Handle "Get Started" logic
+  const handlePasswordUpdate = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      Alert.alert("Error", "All fields are required");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      Alert.alert("Error", "New passwords don't match");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const studentId = await AsyncStorage.getItem("student_id");
+      if (!studentId) {
+        throw new Error("Student not found");
+      }
+
+      const response = await fetch(
+        `${Config.API_BASE_URL}/api/studentchangepass`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            student_id: studentId,
+            currentPassword,
+            newPassword,
+            confirmPassword,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Password update failed");
+      }
+
+      Alert.alert("Success", "Password updated successfully");
+      router.push("/home");
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update password";
+      Alert.alert("Error", errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleBack = () => {
-    router.push("/home"); // Navigate back to the home screen
+    router.push("/home");
   };
 
   return (
     <View style={styles.container}>
-      {/* Updated Back Button */}
+      {/* Back Button */}
       <TouchableOpacity style={styles.backButton} onPress={handleBack}>
         <EvilIcons
           name="chevron-left"
@@ -40,7 +92,7 @@ export default function ChangePasswordScreen() {
         />
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.Screen} onPress={handleGetStarted}>
+      <TouchableOpacity style={styles.Screen} activeOpacity={1}>
         <View style={styles.welcomeContainer}>
           <Image
             source={require("@/assets/images/upperlogin.png")}
@@ -51,7 +103,6 @@ export default function ChangePasswordScreen() {
 
       <View style={styles.changepassContainer}>
         <Text style={styles.title}>Reset Password</Text>
-        {/* Subtitle */}
         <Text style={styles.subtitle}>You can type your new password and</Text>
         <Text style={styles.subtitle}>confirm it below</Text>
 
@@ -60,8 +111,8 @@ export default function ChangePasswordScreen() {
           <TextInput
             style={styles.passwordInput}
             placeholder="Current Password"
-            placeholderTextColor="#c0c0c0" // Add placeholder color
-            secureTextEntry={!showCurrentPassword} // Toggle visibility
+            placeholderTextColor="#c0c0c0"
+            secureTextEntry={!showCurrentPassword}
             value={currentPassword}
             onChangeText={setCurrentPassword}
           />
@@ -81,8 +132,8 @@ export default function ChangePasswordScreen() {
           <TextInput
             style={styles.passwordInput}
             placeholder="New Password"
-            placeholderTextColor="#c0c0c0" // Add placeholder color
-            secureTextEntry={!showNewPassword} // Toggle visibility
+            placeholderTextColor="#c0c0c0"
+            secureTextEntry={!showNewPassword}
             value={newPassword}
             onChangeText={setNewPassword}
           />
@@ -102,8 +153,8 @@ export default function ChangePasswordScreen() {
           <TextInput
             style={styles.passwordInput}
             placeholder="Confirm Password"
-            placeholderTextColor="#c0c0c0" // Add placeholder color
-            secureTextEntry={!showConfirmPassword} // Toggle visibility
+            placeholderTextColor="#c0c0c0"
+            secureTextEntry={!showConfirmPassword}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
           />
@@ -118,9 +169,17 @@ export default function ChangePasswordScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Change Password Button */}
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Reset Password</Text>
+        {/* Update Button */}
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handlePasswordUpdate}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Reset Password</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -138,7 +197,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: -10,
     width: "100%",
-    height: 250, // Adjust height as needed
+    height: 250,
     resizeMode: "cover",
     borderRadius: 20,
   },
@@ -149,7 +208,7 @@ const styles = StyleSheet.create({
     padding: 20,
     bottom: "17%",
     minHeight: 430,
-    marginTop: 120, // Adjust margin to position the container below the image
+    marginTop: 120,
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
@@ -166,14 +225,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 22,
     backgroundColor: "#fff",
-    paddingLeft: 10, // Reduced padding
+    paddingLeft: 10,
     paddingRight: 10,
     height: 50,
   },
   passwordInput: {
     flex: 1,
-    padding: 10, // Reduced padding
-    paddingLeft: 0, // Align text to the left without space
+    padding: 10,
+    paddingLeft: 0,
   },
   title: {
     fontSize: 22,
@@ -186,7 +245,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#333333",
     textAlign: "center",
-    marginBottom: 1, // Add margin to separate from the fields
+    marginBottom: 1,
     bottom: 6,
   },
   Screen: {
@@ -220,10 +279,10 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: "absolute",
-    top: 15, // Adjust this value to position the button correctly
-    left: 10, // Adjust this value to position the button correctly
+    top: 15,
+    left: 10,
     padding: 10,
-    zIndex: 1, // Ensure the button is above other elements
+    zIndex: 1,
   },
   backIcon: {},
 });

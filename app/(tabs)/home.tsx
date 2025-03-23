@@ -36,6 +36,8 @@ export default function HomeScreen() {
   const slideAnim = useRef(new Animated.Value(-300)).current; // Initial position off-screen
   const navigation = useNavigation();
   const route = useRoute<HomeScreenRouteProp>();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout>();
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
@@ -75,6 +77,7 @@ export default function HomeScreen() {
 
   const fetchStudentDetails = async () => {
     try {
+      setIsUpdating(true);
       const studentId = await AsyncStorage.getItem("student_id");
       if (!studentId) {
         console.error("Student ID not found in AsyncStorage");
@@ -87,86 +90,37 @@ export default function HomeScreen() {
       const data = await response.json();
 
       if (response.ok) {
-        setStudentDetails({
+        setStudentDetails((prev) => ({
+          ...prev,
           firstName: data.studentDetails.firstName || "N/A",
           renderedTime: data.studentDetails.renderedTime || 0,
           remainingTime: data.studentDetails.remainingTime || 0,
           requiredTime: data.studentDetails.requiredTime || 0,
           studentSex: data.studentDetails.studentSex || "N/A",
-        });
-      } else {
-        console.error("Error fetching student details:", data.message);
+        }));
       }
     } catch (error) {
       console.error("Error fetching student details:", error);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
-  const calculateRenderedTime = async () => {
-    try {
-      const studentId = await AsyncStorage.getItem("student_id");
-      if (!studentId) {
-        Alert.alert("Error", "Student ID not found in AsyncStorage.");
-        return;
-      }
+  const useInterval = (callback: () => void, delay: number) => {
+    const savedCallback = useRef<() => void>();
 
-      const response = await fetch(
-        `${Config.API_BASE_URL}/api/student-timesheet?student_id=${studentId}`
-      );
-      const data = await response.json();
+    useEffect(() => {
+      savedCallback.current = callback;
+    }, [callback]);
 
-      if (response.ok) {
-        interface TimesheetEntry {
-          totalHours: string;
-        }
-        const totalRendered = data.timesheet.reduce(
-          (sum: number, entry: TimesheetEntry) => {
-            const hours = parseFloat(entry.totalHours);
-            return sum + (isNaN(hours) ? 0 : hours);
-          },
-          0
-        );
-
-        setStudentDetails((prev) => ({
-          ...prev,
-          renderedTime: parseFloat(totalRendered.toFixed(2)),
-          remainingTime: parseFloat(
-            Math.max(prev.requiredTime - totalRendered, 0).toFixed(2)
-          ),
-        }));
-      } else {
-        console.error("Error fetching timesheet:", data.error);
-      }
-    } catch (error) {
-      console.error("Error fetching timesheet:", error);
-    }
+    useEffect(() => {
+      const tick = () => savedCallback.current?.();
+      const id = setInterval(tick, delay);
+      return () => clearInterval(id);
+    }, [delay]);
   };
 
-  const fetchLatestAnnouncement = async () => {
-    try {
-      const studentId = await AsyncStorage.getItem("student_id");
-      if (!studentId) {
-        console.error("Student ID not found in AsyncStorage");
-        return;
-      }
-
-      const response = await fetch(
-        `${Config.API_BASE_URL}/api/latest-announcement?student_id=${studentId}`
-      );
-      const data = await response.json();
-
-      if (response.ok) {
-        setAnnouncement({
-          type: data.announcement.announcement_type,
-          content: data.announcement.announcement_content,
-        });
-      } else {
-        console.error("Error fetching announcement:", data.error);
-      }
-    } catch (error) {
-      console.error("Error fetching announcement:", error);
-    }
-  };
+  useInterval(fetchStudentDetails, 5000);
 
   const getProfileImage = () => {
     if (studentDetails.studentSex === "Male") {
@@ -174,13 +128,10 @@ export default function HomeScreen() {
     } else if (studentDetails.studentSex === "Female") {
       return require("@/assets/images/female.png");
     }
-    return require("@/assets/images/profilesample.png");
   };
 
   useEffect(() => {
-    fetchLatestAnnouncement();
     fetchStudentDetails();
-    calculateRenderedTime();
   }, []);
 
   return (

@@ -12,108 +12,66 @@ type TimesheetEntry = {
   totalHours: number;
 };
 
-// Define the type for the navigation stack
 type RootStackParamList = {
   SearchScreen: { timesheet: TimesheetEntry[] };
 };
 
-// Use the correct navigation type
 type DTRTableNavigationProp = StackNavigationProp<
   RootStackParamList,
   "SearchScreen"
 >;
 
 const DTRTable = () => {
-  const [timesheet, setTimesheet] = useState<TimesheetEntry[]>([
-    {
-      date: "2023-10-01",
-      morning: { in: "08:00 AM", out: "12:00 PM" },
-      afternoon: { in: "01:00 PM", out: "05:00 PM" },
-      totalHours: 8,
-    },
-    {
-      date: "2023-10-02",
-      morning: { in: "08:15 AM", out: "12:15 PM" },
-      afternoon: { in: "01:15 PM", out: "05:15 PM" },
-      totalHours: 8,
-    },
-    {
-      date: "2023-10-03",
-      morning: { in: "08:30 AM", out: "12:30 PM" },
-      afternoon: { in: "01:30 PM", out: "05:30 PM" },
-      totalHours: 8,
-    },
-    {
-      date: "2023-10-04",
-      morning: { in: "08:45 AM", out: "12:45 PM" },
-      afternoon: { in: "01:45 PM", out: "05:45 PM" },
-      totalHours: 8,
-    },
-    {
-      date: "2023-10-05",
-      morning: { in: "09:00 AM", out: "01:00 PM" },
-      afternoon: { in: "02:00 PM", out: "06:00 PM" },
-      totalHours: 8,
-    },
-    {
-      date: "2023-10-05",
-      morning: { in: "09:00 AM", out: "01:00 PM" },
-      afternoon: { in: "02:00 PM", out: "06:00 PM" },
-      totalHours: 8,
-    },
-    {
-      date: "2023-10-05",
-      morning: { in: "09:00 AM", out: "01:00 PM" },
-      afternoon: { in: "02:00 PM", out: "06:00 PM" },
-      totalHours: 8,
-    },
-    {
-      date: "2023-10-05",
-      morning: { in: "09:00 AM", out: "01:00 PM" },
-      afternoon: { in: "02:00 PM", out: "06:00 PM" },
-      totalHours: 8,
-    },
-    {
-      date: "2023-10-05",
-      morning: { in: "09:00 AM", out: "01:00 PM" },
-      afternoon: { in: "02:00 PM", out: "06:00 PM" },
-      totalHours: 8,
-    },
-    {
-      date: "2023-10-05",
-      morning: { in: "09:00 AM", out: "01:00 PM" },
-      afternoon: { in: "02:00 PM", out: "06:00 PM" },
-      totalHours: 8,
-    },
-    {
-      date: "2023-10-05",
-      morning: { in: "09:00 AM", out: "01:00 PM" },
-      afternoon: { in: "02:00 PM", out: "06:00 PM" },
-      totalHours: 8,
-    },
-    {
-      date: "2023-10-05",
-      morning: { in: "09:00 AM", out: "01:00 PM" },
-      afternoon: { in: "02:00 PM", out: "06:00 PM" },
-      totalHours: 8,
-    },
-  ]);
+  const [timesheet, setTimesheet] = useState<TimesheetEntry[]>([]);
   const navigation = useNavigation<DTRTableNavigationProp>();
-  // Fetch timesheet on component mount (optional, for real data)
+
   useEffect(() => {
-    //
+    let isMounted = true;
+
+    const fetchStudentTimesheet = async () => {
+      try {
+        const studentId = await AsyncStorage.getItem("student_id");
+        if (!studentId) {
+          console.error("Student ID not found in AsyncStorage");
+          return;
+        }
+
+        const response = await fetch(
+          `${Config.API_BASE_URL}/api/student-timesheets?student_id=${studentId}`
+        );
+        const data = await response.json();
+
+        if (response.ok && isMounted) {
+          setTimesheet(data.timesheet);
+        } else {
+          console.error("Error fetching timesheet:", data.error);
+        }
+      } catch (error) {
+        console.error("Error fetching timesheet:", error);
+      }
+    };
+
+    // Fetch initially
+    fetchStudentTimesheet();
+
+    // Poll every 10 seconds
+    const interval = setInterval(fetchStudentTimesheet, 10000);
+
+    // Cleanup on unmount
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const handleSearchPress = () => {
-    console.log("Navigating to SearchScreen with timesheet:", timesheet); // Debug log
     navigation.navigate("SearchScreen", { timesheet });
   };
+
   return (
     <View style={styles.container}>
-      {/* "Records" Heading */}
       <Text style={styles.heading}>Records</Text>
 
-      {/* Fixed Table Header */}
       <View style={styles.tableHeader}>
         <View style={styles.headerCell}>
           <Text style={styles.headerText}>Day</Text>
@@ -132,7 +90,6 @@ const DTRTable = () => {
         </View>
       </View>
 
-      {/* Scrollable Table Body */}
       <ScrollView style={styles.scrollContainer}>
         {timesheet.map((row, index) => (
           <View key={index} style={styles.rowContainer}>
@@ -182,9 +139,9 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#000", // Matching theme color
+    color: "#000",
     textAlign: "left",
-    marginBottom: 10, // Add space below the heading
+    marginBottom: 10,
   },
   tableHeader: {
     flexDirection: "row",
@@ -213,12 +170,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rowContainer: {
-    marginBottom: 8, // Gap between rows
-    borderWidth: 1, // Border for the row container
+    marginBottom: 8,
+    borderWidth: 1,
     borderColor: "#ddd",
-    borderRadius: 5, // Rounded corners for the row container
-    backgroundColor: "#fff", // Background color for the row container
-    padding: 5, // Padding inside the row container
+    borderRadius: 5,
+    backgroundColor: "#fff",
+    padding: 5,
   },
   tableRow: {
     flexDirection: "row",
